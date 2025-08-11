@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Readbook — Voces por personaje (HTML/CSS/JS)</title>
+  <meta name="description" content="Readbook: app web sin backend para leer en voz alta guiones o libros, con voces por personaje (Web Speech API)." />
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+  <meta name="theme-color" content="#0b0e14" />
+  <link rel="stylesheet" href="app.css" />
+  <meta property="og:title" content="Readbook — Voces por personaje" />
+  <meta property="og:description" content="Lee tus guiones/libros con voces por personaje. 100% client‑side." />
+  <meta property="og:image" content="screenshot.png" />
+  <meta property="og:type" content="website" />
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M4 12a8 8 0 1116 0 8 8 0 01-16 0z" fill="white" fill-opacity=".08"/>
+          <path d="M8 12a4 4 0 118 0 4 4 0 01-8 0z" fill="white" />
+        </svg>
+      </div>
+      <div>
+        <h1>Readbook</h1>
+        <div class="tag">Guiones con voces por personaje — 100% client-side.</div>
+      </div>
+    </div>
+    <div class="row">
+      <button id="btnExport" class="ghost" title="Exportar tu texto a .txt">Exportar .txt</button>
+      <button id="btnReset" class="danger" title="Limpiar todo">Limpiar</button>
+      <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida del DOM">🧪 Comprobar</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid">
+      <section class="card controls">
+        <div class="head">
+          <h2>Tu texto</h2>
+          <span class="pill" id="wordCount">0 palabras</span>
+        </div>
+        <div class="body stack">
+          <textarea id="inputText" placeholder="Pega aquí tu guion/libro. Sintaxis para personajes: 
+
+1) Línea: NOMBRE: diálogo
+2) Bloque: [[NOMBRE]] texto… [[/NOMBRE]]
+
+El resto se lee con la voz por defecto (Narrador)."></textarea>
+          <div class="row">
+            <label class="drop" id="dropZone" style="flex:1">Suelta aquí tu archivo .txt/.md</label>
+            <input type="file" id="fileInput" accept=".txt,.md,text/plain,text/markdown" />
+          </div>
+
+          <div class="toolbar">
+            <div class="group">
+              <button id="btnPlay" class="primary" title="Leer (Espacio)">▶️ Leer <span class="kbd">Espacio</span></button>
+              <button id="btnPause" title="Pausar (Espacio)">⏸️ Pausa <span class="kbd">Espacio</span></button>
+              <button id="btnResume" title="Reanudar (R)">⏯️ Reanudar <span class="kbd">R</span></button>
+              <button id="btnStop" class="ghost" title="Parar (S)">⏹️ Parar <span class="kbd">S</span></button>
+            </div>
+            <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
+          </div>
+          <div class="quick-tags stack">
+            <div class="row" style="align-items:flex-end">
+              <div class="hint" style="flex:1">Arrastra una etiqueta al editor o aplícala a la selección.</div>
+              <div class="row">
+                <select id="applyTagSelect" title="Elige etiqueta para aplicar a la selección"></select>
+                <button id="applyTagBtn" class="ghost" title="Aplicar etiqueta a la selección" disabled>🏷️ Etiquetar selección</button>
+              </div>
+            </div>
+            <div id="tagBar" class="chips"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="head">
+          <h2>Voz por defecto (Narrador)</h2>
+          <span class="pill" id="langHint">–</span>
+        </div>
+        <div class="body stack">
+          <div class="row" style="align-items:flex-end">
+            <div style="flex:1">
+              <label for="voiceSelect" class="hint">Voz</label>
+              <select id="voiceSelect" style="width:100%"></select>
+            </div>
+            <button id="btnPreview" title="Prueba corta de la voz">🔊 Prueba</button>
+          </div>
+
+          <div class="sliders">
+            <div class="slider">
+              <label>Velocidad <span id="rateVal">1.0</span></label>
+              <input type="range" id="rate" min="0.5" max="1.8" step="0.1" value="1.0" />
+            </div>
+            <div class="slider">
+              <label>Tono <span id="pitchVal">1.0</span></label>
+              <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1.0" />
+            </div>
+            <div class="slider">
+              <label>Volumen <span id="volumeVal">1.0</span></label>
+              <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
+            </div>
+          </div>
+
+          <div class="status">
+            <div>
+              <div id="nowReading" class="hint">Listo para leer.</div>
+              <div id="estimates" class="hint">–</div>
+            </div>
+            <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top:18px">
+      <div class="head">
+        <h2>Personajes (voces por rol)</h2>
+        <span class="pill" id="castCount">0 personajes</span>
+      </div>
+      <div class="body stack">
+        <div class="row">
+          <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
+          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto‑detectar desde el texto</button>
+        </div>
+        <div id="castList" class="cast-list"></div>
+        <div class="hint">Sintaxis soportada:
+          <ul>
+            <li><strong>Línea</strong>: <code>ANA: ¿Cómo estás?</code></li>
+            <li><strong>Bloque</strong>: <code>[[LOCUTOR]] Bienvenido al programa… [[/LOCUTOR]]</code></li>
+          </ul>
+          Todo lo que no tenga etiqueta se lee como <em>Narrador</em>.
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
+    <div id="supportNote">Nota: usa la <strong>Web Speech API</strong> del navegador. En algunos móviles/navegadores puede variar el soporte.</div>
+    <div class="row" style="justify-content:flex-end"><span id="domStatus" class="pill">Autotest: pendiente</span></div>
+    <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
