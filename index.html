@@ -5,15 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Readbook — Voces por personaje (HTML/CSS/JS)</title>
   <meta name="description" content="Readbook: app web sin backend para leer en voz alta guiones o libros, con voces por personaje (Web Speech API)." />
+  <meta name="theme-color" content="#0b0e14" />
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-  <meta name="theme-color" content="#0b0e14" />
-  <link rel="stylesheet" href="app.css" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
   <meta property="og:title" content="Readbook — Voces por personaje" />
-  <meta property="og:description" content="Lee tus guiones/libros con voces por personaje. 100% client‑side." />
+  <meta property="og:description" content="Lee tus guiones/libros con voces por personaje. 100% client-side." />
   <meta property="og:image" content="screenshot.png" />
   <meta property="og:type" content="website" />
+  <link rel="stylesheet" href="app.css" />
 </head>
 <body>
   <header>
@@ -30,6 +32,11 @@
       </div>
     </div>
     <div class="row">
+      <select id="themeSelect" class="ghost" title="Tema de la app">
+        <option value="auto">🪄 Auto</option>
+        <option value="dark">🌙 Oscuro</option>
+        <option value="light">🌞 Claro</option>
+      </select>
       <button id="btnExport" class="ghost" title="Exportar tu texto a .txt">Exportar .txt</button>
       <button id="btnReset" class="danger" title="Limpiar todo">Limpiar</button>
       <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida del DOM">🧪 Comprobar</button>
@@ -48,6 +55,7 @@
 
 1) Línea: NOMBRE: diálogo
 2) Bloque: [[NOMBRE]] texto… [[/NOMBRE]]
+3) Alternativo: [voz=NOMBRE] texto… [/voz]
 
 El resto se lee con la voz por defecto (Narrador)."></textarea>
           <div class="row">
@@ -64,7 +72,42 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
             </div>
             <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
           </div>
-          <div class="quick-tags stack">
+
+          <div class="stack" style="margin-top:8px">
+            <div class="row" style="align-items:flex-end">
+              <div style="flex:1">
+                <label for="voiceSelect" class="hint">Voz (Narrador por defecto)</label>
+                <select id="voiceSelect" style="width:100%"></select>
+              </div>
+              <button id="btnPreview" title="Prueba corta de la voz">🔊 Prueba</button>
+              <span class="pill" id="langHint">–</span>
+            </div>
+
+            <div class="sliders">
+              <div class="slider">
+                <label>Velocidad <span id="rateVal">1.0</span></label>
+                <input type="range" id="rate" min="0.5" max="1.8" step="0.1" value="1.0" />
+              </div>
+              <div class="slider">
+                <label>Tono <span id="pitchVal">1.0</span></label>
+                <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1.0" />
+              </div>
+              <div class="slider">
+                <label>Volumen <span id="volumeVal">1.0</span></label>
+                <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
+              </div>
+            </div>
+
+            <div class="status">
+              <div>
+                <div id="nowReading" class="hint">Listo para leer.</div>
+                <div id="estimates" class="hint">–</div>
+              </div>
+              <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
+            </div>
+          </div>
+
+          <div class="quick-tags stack" style="margin-top:6px">
             <div class="row" style="align-items:flex-end">
               <div class="hint" style="flex:1">Arrastra una etiqueta al editor o aplícala a la selección.</div>
               <div class="row">
@@ -79,64 +122,25 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
 
       <section class="card">
         <div class="head">
-          <h2>Voz por defecto (Narrador)</h2>
-          <span class="pill" id="langHint">–</span>
+          <h2>Personajes (voces por rol)</h2>
+          <span class="pill" id="castCount">0 personajes</span>
         </div>
         <div class="body stack">
-          <div class="row" style="align-items:flex-end">
-            <div style="flex:1">
-              <label for="voiceSelect" class="hint">Voz</label>
-              <select id="voiceSelect" style="width:100%"></select>
-            </div>
-            <button id="btnPreview" title="Prueba corta de la voz">🔊 Prueba</button>
+          <div class="row">
+            <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
+            <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto-detectar desde el texto</button>
           </div>
-
-          <div class="sliders">
-            <div class="slider">
-              <label>Velocidad <span id="rateVal">1.0</span></label>
-              <input type="range" id="rate" min="0.5" max="1.8" step="0.1" value="1.0" />
-            </div>
-            <div class="slider">
-              <label>Tono <span id="pitchVal">1.0</span></label>
-              <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1.0" />
-            </div>
-            <div class="slider">
-              <label>Volumen <span id="volumeVal">1.0</span></label>
-              <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
-            </div>
-          </div>
-
-          <div class="status">
-            <div>
-              <div id="nowReading" class="hint">Listo para leer.</div>
-              <div id="estimates" class="hint">–</div>
-            </div>
-            <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
+          <div id="castList" class="cast-list"></div>
+          <div class="hint">Sintaxis soportada:
+            <ul>
+              <li><strong>Línea</strong>: <code>ANA: ¿Cómo estás?</code></li>
+              <li><strong>Bloque</strong>: <code>[[LOCUTOR]] Bienvenido… [[/LOCUTOR]]</code></li>
+              <li><strong>Alt</strong>: <code>[voz=ANA] ... [/voz]</code></li>
+            </ul>
           </div>
         </div>
       </section>
     </div>
-
-    <section class="card" style="margin-top:18px">
-      <div class="head">
-        <h2>Personajes (voces por rol)</h2>
-        <span class="pill" id="castCount">0 personajes</span>
-      </div>
-      <div class="body stack">
-        <div class="row">
-          <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
-          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto‑detectar desde el texto</button>
-        </div>
-        <div id="castList" class="cast-list"></div>
-        <div class="hint">Sintaxis soportada:
-          <ul>
-            <li><strong>Línea</strong>: <code>ANA: ¿Cómo estás?</code></li>
-            <li><strong>Bloque</strong>: <code>[[LOCUTOR]] Bienvenido al programa… [[/LOCUTOR]]</code></li>
-          </ul>
-          Todo lo que no tenga etiqueta se lee como <em>Narrador</em>.
-        </div>
-      </div>
-    </section>
   </main>
 
   <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
