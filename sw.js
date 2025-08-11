@@ -1,4 +1,4 @@
-const CACHE = 'readbook-v1.2.3'; // bump to flush old cache
+const CACHE = 'readbook-v1.2.4'; // bump to flush old cache
 const ASSETS = [
   './',
   'index.html',
