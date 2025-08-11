@@ -273,16 +273,17 @@
   function previewCharacter(c){ const v = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice(); const sample = (v?.lang||'').toLowerCase().startsWith('es') ? `${c.name||'Personaje'}: esta es una prueba.` : `${c.name||'Character'}: this is a test.`; const u = new SpeechSynthesisUtterance(sample); if(v) u.voice = v; u.lang = v?.lang; u.rate = c.rate||1; u.pitch = c.pitch||1; u.volume = c.volume||1; window.speechSynthesis.speak(u); }
   function currentSettingsForSpeaker(name){ if(!name) return null; const n = norm(name); const c = state.cast.find(x => norm(x.name) === n); if(!c) return null; const v = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice(); return {voice: v, rate: c.rate||1, pitch: c.pitch||1, volume: c.volume||1}; }
 
-  // --- Parser con soporte [[NOMBRE]] y [voz=NOMBRE] ... [/voz] y NAME: texto ---
+  // --- Parser con soporte [[NOMBRE]], [voz=NOMBRE] ... [/voz] y NAME: texto ---
   function convertVozBlocks(str){
+    // ya estaba correcto con [\\s\\S]
     return str.replace(/\[voz=([^\]]+)\]([\s\S]*?)\[\/voz\]/gi, (_,name,inner)=> `[[${(name||'').trim()}]]${inner}[[/${(name||'').trim()}]]`);
   }
   function parseScript(t){
     t = convertVozBlocks(t).replace(/\r/g,'');
 
-    // 1) Bloques [[NAME]] ... [[/NAME]]
+    // 1) Bloques [[NAME]] ... [[/NAME]]  — CORREGIDO: [\s\S] en lugar de [\s\s]
     const out = [];
-    const re = /\[\[([^\]]+)\]\]([\s\s]*?)\[\[\/\1\]\]/g;
+    const re = /\[\[([^\]]+)\]\]([\s\S]*?)\[\[\/\1\]\]/g;
     let last = 0; let m;
     while((m = re.exec(t))){
       if(m.index > last){
@@ -387,12 +388,12 @@
 
   function preview(){ const v = getSelectedVoice(); const sample = (v?.lang||'').toLowerCase().startsWith('es') ? 'Hola, ésta es una prueba de voz.' : 'Hello, this is a quick voice test.'; const u = new SpeechSynthesisUtterance(sample); if(v) u.voice = v; u.lang = v?.lang || state.langPreferred; u.rate = 1; u.pitch = 1; u.volume = parseFloat(els.volume.value)||1; window.speechSynthesis.speak(u); }
 
-  // Auto-detect personajes desde texto
+  // Auto-detect personajes desde texto — CORREGIDO: [\s\S]
   function autoDetect(){
     const t = els.text.value || '';
     const names = new Set();
     // [[NAME]] blocks
-    const reB = /\[\[([^\]]+)\]\][\s\s]*?\[\[\/\1\]\]/g; let mb; while((mb = reB.exec(t))){ names.add((mb[1]||'').trim()); }
+    const reB = /\[\[([^\]]+)\]\][\s\S]*?\[\[\/\1\]\]/g; let mb; while((mb = reB.exec(t))){ names.add((mb[1]||'').trim()); }
     // [voz=NAME] ... [/voz]
     const reV = /\[voz=([^\]]+)\][\s\S]*?\[\/voz\]/gi; let mv; while((mv = reV.exec(t))){ names.add((mv[1]||'').trim()); }
     // NAME: texto
