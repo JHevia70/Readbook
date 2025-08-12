@@ -1,4 +1,4 @@
-// Readbook / app.js v1.3.6 — Color editable por personaje + fixes
+// Readbook / app.js v1.3.7 — Color editable + botones Asignar sel./Párr
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
@@ -142,7 +142,7 @@
       const picker = document.createElement('input');
       picker.type = 'color'; picker.className='color';
       picker.value = (c.color || COLORS[i%COLORS.length]);
-      if(c.locked){ /* si no quieres editar color del narrador: */ /* picker.disabled = true; */ }
+      if(c.locked){ /* picker.disabled = true; */ }
       picker.oninput = ()=>{
         c.color = picker.value; dot.style.background = c.color; save(); renderTagBar();
       };
@@ -175,15 +175,19 @@
 
       // acciones
       const actions = document.createElement('div'); actions.className='cast-actions';
+      const bSel = document.createElement('button'); bSel.textContent='🏷️ Asignar sel.'; bSel.className='ghost'; bSel.title='Aplicar etiqueta al texto seleccionado';
+      bSel.onclick = ()=> wrapSelectionWithTag(c.name||'');
+      const bPar = document.createElement('button'); bPar.textContent='🧩 Párr'; bPar.className='ghost'; bPar.title='Aplicar etiqueta al párrafo';
+      bPar.onclick = ()=> wrapParagraphWithTag(c.name||'');
       const bTest = document.createElement('button'); bTest.textContent='🔊 Prueba';
       bTest.onclick = ()=>{
         const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice();
         const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`);
         if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u);
       };
-      actions.append(bTest);
+      actions.append(bSel, bPar, bTest);
       if(!c.locked){
-        const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger';
+        const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje';
         bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); };
         actions.append(bDel);
       }
