@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Readbook — Voces por personaje (HTML/CSS/JS)</title>
   <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Con asignación de voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=1.3.0" />
+  <link rel="stylesheet" href="app.css?v=1.3.1" />
 </head>
 <body>
   <header>
@@ -13,7 +13,7 @@
       <div class="logo" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M4 12a8 8 0 1116 0 8 8 0 01-16 0z" fill="white" fill-opacity=".08"/>
-          <path d="M8 12a4 4 4 0 118 0 4 4 0 01-8 0z" fill="white" />
+          <path d="M8 12a4 4 0 118 0 4 4 0 01-8 0z" fill="white" />
         </svg>
       </div>
       <div>
@@ -24,7 +24,7 @@
     <div class="row">
       <button id="btnExport" class="ghost" title="Exportar tu texto a .txt">Exportar .txt</button>
       <button id="btnReset" class="danger" title="Limpiar todo">Limpiar</button>
-      <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida del DOM">🧪 Comprobar</button>
+      <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida">🧪 Comprobar</button>
     </div>
   </header>
 
@@ -52,7 +52,14 @@ Lo no etiquetado se lee como Narrador (que es un personaje más)."></textarea>
               <button id="btnResume" title="Reanudar (R)">⏯️ Reanudar <span class="kbd">R</span></button>
               <button id="btnStop" class="ghost" title="Parar (S)">⏹️ Parar <span class="kbd">S</span></button>
             </div>
-            <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
+            <div class="group">
+              <button id="btnRec" class="danger" title="Grabar audio de esta pestaña (elige formato)">⏺️ Grabar</button>
+              <select id="recFormat" title="Formato de exportación">
+                <option value="wav">WAV</option>
+                <option value="mp3">MP3 (beta)</option>
+                <option value="webm">WEBM</option>
+              </select>
+            </div>
           </div>
 
           <div class="status">
@@ -91,8 +98,9 @@ Lo no etiquetado se lee como Narrador (que es un personaje más)."></textarea>
       <div class="head">
         <h2>Personajes (voces por rol)</h2>
         <span class="pill" id="castCount">0 personajes</span>
+        <button id="toggleCast" class="ghost" title="Plegar/expandir">⇕</button>
       </div>
-      <div class="body stack">
+      <div class="body stack" id="castBody">
         <div class="row">
           <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
           <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto-detectar desde el texto</button>
@@ -110,7 +118,7 @@ Lo no etiquetado se lee como Narrador (que es un personaje más)."></textarea>
   </main>
 
   <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
-    <div id="supportNote">Nota: usa la <strong>Web Speech API</strong> del navegador. En algunos móviles/navegadores puede variar el soporte.</div>
+    <div id="supportNote">Nota: usa la <strong>Web Speech API</strong> del navegador. Para exportar audio, el navegador te pedirá permiso para capturar el audio de esta pestaña.</div>
     <div class="row" style="justify-content:flex-end"><span id="domStatus" class="pill">Autotest: pendiente</span></div>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
