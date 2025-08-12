@@ -4,8 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Lector TTS — Voces por personaje (HTML/CSS/JS)</title>
-  <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Ahora con asignación de voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=1.3.5" />
+  <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Voces por personaje." />
+  <link rel="stylesheet" href="app.css" />
 </head>
 <body>
   <header>
@@ -30,6 +30,7 @@
 
   <main>
     <div class="grid">
+      <!-- Columna izquierda: editor -->
       <section class="card controls">
         <div class="head">
           <h2>Tu texto</h2>
@@ -43,7 +44,6 @@
 2) Bloque: [[NOMBRE]] texto… [[/NOMBRE]]
 
 El resto se lee con la voz por defecto (Narrador)."></textarea>
-            <div id="editorVisual" class="editor-visual" hidden></div>
           </div>
           <div class="row">
             <label class="drop" id="dropZone" style="flex:1">Suelta aquí tu archivo .txt/.md</label>
@@ -57,24 +57,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
               <button id="btnResume" title="Reanudar (R)">⏯️ Reanudar <span class="kbd">R</span></button>
               <button id="btnStop" class="ghost" title="Parar (S)">⏹️ Parar <span class="kbd">S</span></button>
             </div>
-            <div class="group">
-              <button id="btnRec" class="danger" title="Exportar audio (captura esta pestaña con audio)">⏺️ Exportar audio</button>
-              <select id="recFormat" title="Formato de exportación">
-                <option value="wav">WAV</option>
-                <option value="mp3">MP3 (beta)</option>
-                <option value="webm">WEBM</option>
-              </select>
-              <button id="btnToggleView" class="ghost" title="Alternar Colores/Etiquetas">🎨 Colores</button>
-            </div>
-          </div>
-          <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
-
-          <div class="status">
-            <div>
-              <div id="nowReading" class="hint">Listo para leer.</div>
-              <div id="estimates" class="hint">–</div>
-            </div>
-            <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
+            <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
           </div>
 
           <div class="quick-tags stack">
@@ -90,10 +73,11 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
         </div>
       </section>
 
+      <!-- Columna derecha: Asignación rápida -->
       <section class="card" id="rightPanel">
         <div class="head small">
           <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
-          <span class="hint">Clic: Sel. / Párr / Prueba</span>
+          <span class="hint">Sel. / Párr / Prueba</span>
         </div>
         <div class="body">
           <div id="quickCastList" class="quick-cast"></div>
@@ -129,6 +113,14 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
             <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
           </div>
         </div>
+
+        <div class="status">
+          <div>
+            <div id="nowReading" class="hint">Listo para leer.</div>
+            <div id="estimates" class="hint">–</div>
+          </div>
+          <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
+        </div>
       </div>
     </section>
 
@@ -155,11 +147,11 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
   </main>
 
   <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
-    <div id="supportNote">Para exportar audio: selecciona <strong>Esta pestaña</strong> y marca <strong>Compartir audio</strong>.</div>
+    <div id="supportNote">Nota: usa la <strong>Web Speech API</strong> del navegador. En algunos móviles/navegadores puede variar el soporte.</div>
     <div class="row" style="justify-content:flex-end"><span id="domStatus" class="pill">Autotest: pendiente</span></div>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
 
-  <script src="app.js?v=1.3.5" defer></script>
+  <script src="app.js?v=1.3.8" defer></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-// Readbook / app.js v1.3.7 — Color editable + botones Asignar sel./Párr
+// Readbook / app.js v1.3.8 — Right panel QuickCast + mini tooltip + bugfix
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
@@ -31,6 +31,8 @@
     tagBar: $('#tagBar'),
     applyTagSelect: $('#applyTagSelect'),
     applyTagBtn: $('#applyTagBtn'),
+    // quick cast
+    quickCast: $('#quickCastList'),
     // misc
     exportBtn: $('#btnExport'),
     resetBtn: $('#btnReset'),
@@ -74,8 +76,7 @@
     });
     renderVoiceSelect();
     ensureNarrator();
-    renderCast();
-    renderTagBar();
+    renderCast(); renderTagBar(); renderQuickCast();
   }
   function pickDefaultVoice(){
     return state.voices.find(v => (v.lang||'').toLowerCase().startsWith('es')) || state.voices[0];
@@ -123,7 +124,7 @@
       rate: 1, pitch: 1, volume: 1,
       color: COLORS[state.cast.length % COLORS.length]
     });
-    save(); renderCast(); renderTagBar();
+    save(); renderCast(); renderTagBar(); renderQuickCast();
   }
   function renderCast(){
     if(!els.castList) return;
@@ -144,12 +145,12 @@
       picker.value = (c.color || COLORS[i%COLORS.length]);
       if(c.locked){ /* picker.disabled = true; */ }
       picker.oninput = ()=>{
-        c.color = picker.value; dot.style.background = c.color; save(); renderTagBar();
+        c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast();
       };
 
       const input = document.createElement('input');
       input.value = c.name || ''; input.placeholder = 'Nombre del personaje'; input.style.width='100%';
-      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); };
+      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); };
 
       name.append(dot, picker, input);
 
@@ -176,9 +177,9 @@
       // acciones
       const actions = document.createElement('div'); actions.className='cast-actions';
       const bSel = document.createElement('button'); bSel.textContent='🏷️ Asignar sel.'; bSel.className='ghost'; bSel.title='Aplicar etiqueta al texto seleccionado';
-      bSel.onclick = ()=> wrapSelectionWithTag(c.name||'');
+      bSel.onclick = (e)=>{ const ok = wrapSelectionWithTag(c.name||''); if(ok) flashTip(`Etiquetado: ${c.name}`, e); };
       const bPar = document.createElement('button'); bPar.textContent='🧩 Párr'; bPar.className='ghost'; bPar.title='Aplicar etiqueta al párrafo';
-      bPar.onclick = ()=> wrapParagraphWithTag(c.name||'');
+      bPar.onclick = (e)=>{ const ok = wrapParagraphWithTag(c.name||''); if(ok) flashTip(`Párrafo → ${c.name}`, e); };
       const bTest = document.createElement('button'); bTest.textContent='🔊 Prueba';
       bTest.onclick = ()=>{
         const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice();
@@ -188,7 +189,7 @@
       actions.append(bSel, bPar, bTest);
       if(!c.locked){
         const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje';
-        bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); };
+        bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); };
         actions.append(bDel);
       }
 
@@ -196,6 +197,36 @@
       els.castList.appendChild(row);
     });
     if(els.castCount) els.castCount.textContent = `${state.cast.length} personaje${state.cast.length===1?'':'s'}`;
+  }
+
+  // ===== QUICK CAST (panel derecho) =====
+  function renderQuickCast(){
+    if(!els.quickCast) return;
+    els.quickCast.innerHTML='';
+    state.cast.forEach((c,i)=>{
+      if(!c.name) return;
+      const row=document.createElement('div');
+      row.className='qc-row';
+      row.innerHTML=`
+        <div class="who">
+          <span class="dot" style="background:${c.color||COLORS[i%COLORS.length]}"></span>
+          <span class="name">${c.name}</span>
+        </div>
+        <div class="actions">
+          <button class="ghost sel">🏷️ Sel.</button>
+          <button class="ghost par">🧩 Párr</button>
+          <button class="ghost test">🔊</button>
+        </div>`;
+      row.querySelector('.sel').onclick  = (e)=>{ const ok = wrapSelectionWithTag(c.name); if(ok) flashTip(`Etiquetado: ${c.name}`, e); };
+      row.querySelector('.par').onclick  = (e)=>{ const ok = wrapParagraphWithTag(c.name); if(ok) flashTip(`Párrafo → ${c.name}`, e); };
+      row.querySelector('.test').onclick = ()=> previewCharacter(c);
+      els.quickCast.appendChild(row);
+    });
+  }
+  function previewCharacter(c){
+    const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice();
+    const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`);
+    if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u);
   }
 
   // ===== CHIPS + DnD =====
@@ -215,20 +246,17 @@
     buildTagOptions();
   }
   function wrapSelectionWithTag(name){
-    const el=els.text; if(!el) return;
-    if(!name){ toast('Pon nombre al personaje.'); return; }
+    const el=els.text; if(!el) return false;
+    if(!name){ toast('Pon nombre al personaje.'); return false; }
     el.focus();
     const start=el.selectionStart||0, end=el.selectionEnd||0;
+    if(end<=start){ toast('Selecciona texto primero.'); return false; }
     const open=`[[${name}]]`, close=`[[/${name}]]`;
     const v=el.value;
-    if(end>start){
-      el.value = v.slice(0,start) + open + ' ' + v.slice(start,end) + ' ' + close + v.slice(end);
-      el.setSelectionRange((v.slice(0,start)+open+' ').length,(v.slice(0,start)+open+' ').length);
-    }else{
-      el.value = v.slice(0,start) + open + ' ' + close + v.slice(start);
-      el.setSelectionRange((v.slice(0,start)+open+' ').length,(v.slice(0,start)+open+' ').length);
-    }
+    el.value = v.slice(0,start) + open + ' ' + v.slice(start,end) + ' ' + close + v.slice(end);
+    el.setSelectionRange((v.slice(0,start)+open+' ').length,(v.slice(0,start)+open+' ').length);
     save(); updateCounts();
+    return true;
   }
   function getParagraphBounds(value,start,end){
     const len=value.length; let s=Math.max(0,start|0), e=Math.max(s,end|0);
@@ -240,17 +268,18 @@
     return {start:bStart,end:bEnd};
   }
   function wrapParagraphWithTag(name){
-    const el=els.text; if(!el) return;
-    if(!name){ toast('Pon nombre al personaje.'); return; }
+    const el=els.text; if(!el) return false;
+    if(!name){ toast('Pon nombre al personaje.'); return false; }
     const start=el.selectionStart||0, end=el.selectionEnd||start;
     const {start:s,end:e}=getParagraphBounds(el.value,start,end);
     const inside=el.value.slice(s,e);
-    if(!inside.trim()){ toast('Párrafo vacío.'); return; }
-    if(inside.includes('[[')&&inside.includes(']]')){ toast('Ese párrafo ya tiene etiquetas.'); return; }
+    if(!inside.trim()){ toast('Párrafo vacío.'); return false; }
+    if(inside.includes('[[')&&inside.includes(']]')){ toast('Ese párrafo ya tiene etiquetas.'); return false; }
     const open=`[[${name}]] `, close=` [[/${name}]]`;
     el.value = el.value.slice(0,s) + open + inside + close + el.value.slice(e);
     el.setSelectionRange((el.value.slice(0,s)+open).length,(el.value.slice(0,s)+open).length);
     save(); updateCounts();
+    return true;
   }
 
   function bindEditorDnD(){
@@ -343,6 +372,25 @@
     return Array.from(names).filter(n=>n && n.length<=30);
   }
 
+  // ===== MINI TOOLTIP =====
+  function ensureTipCSS(){
+    if(document.getElementById('rb-tip-style')) return;
+    const s=document.createElement('style'); s.id='rb-tip-style';
+    s.textContent = `.rb-tip{position:fixed;z-index:9999;background:#11182a;color:#e6eefc;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transform:translateY(-4px);transition:opacity .15s ease, transform .15s ease;pointer-events:none;font-size:12px}`;
+    document.head.appendChild(s);
+  }
+  function flashTip(text, ev){
+    ensureTipCSS();
+    const tip=document.createElement('div'); tip.className='rb-tip'; tip.textContent=text;
+    let x=window.innerWidth/2, y=60;
+    if(ev && 'clientX' in ev){ x=ev.clientX; y=ev.clientY-20; }
+    tip.style.left = Math.max(8, Math.min(window.innerWidth-8, x))+'px';
+    tip.style.top  = Math.max(8, Math.min(window.innerHeight-8, y))+'px';
+    document.body.appendChild(tip);
+    requestAnimationFrame(()=>{ tip.style.opacity='1'; tip.style.transform='translateY(0)'; });
+    setTimeout(()=>{ tip.style.opacity='0'; tip.style.transform='translateY(-4px)'; setTimeout(()=> tip.remove(), 180); }, 900);
+  }
+
   // ===== INIT / HOOKS =====
   function updateCounts(){
     const words=(els.text?.value.trim().match(/\S+/g)||[]).length;
@@ -370,7 +418,7 @@
       names.forEach(n=>{ if(!state.cast.some(c=>norm(c.name)===norm(n))){ addCharacter(n); added++; } });
       toast(added? `Añadidos ${added} personaje(s).` : 'Nada nuevo que añadir.');
     });
-    if(els.applyTagBtn) els.applyTagBtn.addEventListener('click', ()=>{ const nm=els.applyTagSelect?.value; wrapSelectionWithTag(nm); });
+    if(els.applyTagBtn) els.applyTagBtn.addEventListener('click', (e)=>{ const nm=els.applyTagSelect?.value; const ok=wrapSelectionWithTag(nm); if(ok) flashTip(`Etiquetado: ${nm}`, e); });
     bindEditorDnD();
 
     // lector
@@ -393,9 +441,9 @@
     // self check
     els.selfCheck?.addEventListener('click', ()=>{
       const issues=[];
-      if(!els.castList) issues.push('No castList');
-      if(!els.applyTagBtn) issues.push('No applyTagBtn');
-      if(!els.voiceSel) issues.push('No voiceSelect');
+      if(!els.quickCast) issues.push('Falta #quickCastList');
+      if(!els.castList) issues.push('Falta #castList');
+      if(!els.applyTagBtn) issues.push('Falta #applyTagBtn');
       els.domStatus && (els.domStatus.textContent = issues.length? `Autotest: ${issues.length}` : 'Autotest: OK ✅');
       toast(issues.length? `Autotest: ${issues.join(' • ')}` : 'Autotest: OK ✅');
     });
@@ -413,7 +461,7 @@
     }
     bindBasics();
     ensureNarrator(); ensureColors();
-    renderCast(); renderTagBar();
+    renderCast(); renderTagBar(); renderQuickCast();
     updateCounts();
   }
 
