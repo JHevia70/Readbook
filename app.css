@@ -94,3 +94,33 @@ progress::-moz-progress-bar{background:linear-gradient(90deg,var(--accent),var(-
 
 /* Tooltip fallback */
 .rb-tip{position:fixed;z-index:9999;background:#11182a;color:#e6eefc;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transform:translateY(-4px);transition:opacity .15s ease, transform .15s ease;pointer-events:none;font-size:12px}
+
+/* ==== QuickCast compacto (panel derecho) ==== */
+#rightPanel .qc-row{
+  padding: 6px 8px;
+  gap: 6px;
+  white-space: nowrap;            /* evita saltos */
+}
+#rightPanel .qc-row .who{ gap: 6px; }
+#rightPanel .qc-row .name{
+  max-width: 140px;               /* recorta con … */
+  font-size: 12px;
+}
+#rightPanel .qc-row .badge{
+  width: 16px; height: 16px;      /* numerito más pequeño */
+  font-size: 10px; flex: 0 0 16px;
+}
+#rightPanel .qc-row .dot{          /* puntito de color más pequeño */
+  width: 8px; height: 8px;
+}
+
+#rightPanel .qc-row .actions{
+  display: flex; gap: 6px;
+}
+#rightPanel .qc-row .actions button{
+  font-size: 12px;                /* letra más pequeña */
+  padding: 4px 6px;               /* menos padding */
+  line-height: 1.1;
+  border-radius: 8px;
+  min-width: unset;               /* que no se estire */
+}
