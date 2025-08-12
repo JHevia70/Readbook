@@ -5,25 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Readbook — Voces por personaje (HTML/CSS/JS)</title>
   <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Con asignación de voces por personaje." />
-
-  <!-- Fallback mínimo por si el CSS no carga (lo quitamos en onload del <link>) -->
-  <style id="fallback-css">
-    body{font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial; background:#0b0e14; color:#e6eefc; margin:0}
-    .grid{display:grid; grid-template-columns: 1fr; gap:18px; max-width:1200px; margin:0 auto; padding:0 20px}
-    .card{background:#121826; border:1px solid rgba(255,255,255,.07); border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    .card .head{display:flex; justify-content:space-between; padding:16px 16px 0}
-    .body{padding:16px}
-    textarea{width:100%; min-height:320px; background:#0f1422; color:#e6eefc; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px}
-    button,select{background:#11182a; color:#e6eefc; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:8px 12px}
-    .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap}
-    .chips{display:flex; gap:8px; flex-wrap:wrap}
-    .chip{border:1px solid rgba(255,255,255,.12); padding:4px 8px; border-radius:999px}
-  </style>
-
-  <!-- cache-bust para forzar actualización en navegador + SW -->
-  <link rel="preload" as="style" href="app.css?v=1.2.5">
-  <link rel="stylesheet" href="app.css?v=1.2.5" onload="document.getElementById('fallback-css')?.remove()" />
-
+  <link rel="stylesheet" href="app.css?v=1.2.8" />
 </head>
 <body>
   <header>
@@ -85,7 +67,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
         </div>
       </section>
 
-      <section class="card">
+      <section class="card" id="rightPanel">
         <div class="head">
           <h2>Voz por defecto (Narrador)</h2>
           <span class="pill" id="langHint">–</span>
@@ -121,6 +103,14 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
             </div>
             <progress id="progress" max="100" value="0" aria-label="Progreso de lectura"></progress>
           </div>
+
+          <div class="divider"></div>
+
+          <div class="head small">
+            <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
+            <span class="hint">Clic rápido: asigna a selección o párrafo.</span>
+          </div>
+          <div id="quickCastList" class="quick-cast"></div>
         </div>
       </section>
     </div>
