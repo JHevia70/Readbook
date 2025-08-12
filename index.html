@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Readbook — Voces por personaje (HTML/CSS/JS)</title>
-  <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Con asignación de voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=fix1">
+  <title>Lector TTS — Voces por personaje (HTML/CSS/JS)</title>
+  <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Ahora con asignación de voces por personaje." />
+  <link rel="stylesheet" href="app.css?v=1.3.5" />
 </head>
 <body>
   <header>
@@ -17,14 +17,14 @@
         </svg>
       </div>
       <div>
-        <h1>Readbook</h1>
+        <h1>Lector TTS</h1>
         <div class="tag">Guiones con voces por personaje — 100% client-side.</div>
       </div>
     </div>
     <div class="row">
       <button id="btnExport" class="ghost" title="Exportar tu texto a .txt">Exportar .txt</button>
       <button id="btnReset" class="danger" title="Limpiar todo">Limpiar</button>
-      <button id="btnSelfCheck" class="ghost" title="Autotest del DOM">🧪 Comprobar</button>
+      <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida del DOM">🧪 Comprobar</button>
     </div>
   </header>
 
@@ -37,10 +37,12 @@
         </div>
         <div class="body stack">
           <div class="editor-wrapper">
-            <textarea id="inputText" placeholder="Pega aquí tu guion/libro. Sintaxis:
+            <textarea id="inputText" placeholder="Pega aquí tu guion/libro. Sintaxis para personajes: 
+
 1) Línea: NOMBRE: diálogo
 2) Bloque: [[NOMBRE]] texto… [[/NOMBRE]]
-Lo no etiquetado se lee como Narrador."></textarea>
+
+El resto se lee con la voz por defecto (Narrador)."></textarea>
             <div id="editorVisual" class="editor-visual" hidden></div>
           </div>
           <div class="row">
@@ -56,15 +58,16 @@ Lo no etiquetado se lee como Narrador."></textarea>
               <button id="btnStop" class="ghost" title="Parar (S)">⏹️ Parar <span class="kbd">S</span></button>
             </div>
             <div class="group">
-              <button id="btnRec" class="danger" title="Exportar audio">⏺️ Exportar audio</button>
+              <button id="btnRec" class="danger" title="Exportar audio (captura esta pestaña con audio)">⏺️ Exportar audio</button>
               <select id="recFormat" title="Formato de exportación">
                 <option value="wav">WAV</option>
                 <option value="mp3">MP3 (beta)</option>
                 <option value="webm">WEBM</option>
               </select>
-              <button id="btnToggleView" class="ghost" title="Mostrar/Ocultar etiquetas">🎨 Colores</button>
+              <button id="btnToggleView" class="ghost" title="Alternar Colores/Etiquetas">🎨 Colores</button>
             </div>
           </div>
+          <div class="hint">Consejo: usa los atajos para grabar ritmo sin tocar el ratón.</div>
 
           <div class="status">
             <div>
@@ -90,7 +93,7 @@ Lo no etiquetado se lee como Narrador."></textarea>
       <section class="card" id="rightPanel">
         <div class="head small">
           <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
-          <span class="hint">Clic rápido: Sel. o Párr.</span>
+          <span class="hint">Clic: Sel. / Párr / Prueba</span>
         </div>
         <div class="body">
           <div id="quickCastList" class="quick-cast"></div>
@@ -100,27 +103,63 @@ Lo no etiquetado se lee como Narrador."></textarea>
 
     <section class="card" style="margin-top:18px">
       <div class="head">
+        <h2>Voz por defecto (Narrador)</h2>
+        <span class="pill" id="langHint">–</span>
+      </div>
+      <div class="body stack">
+        <div class="row" style="align-items:flex-end">
+          <div style="flex:1">
+            <label for="voiceSelect" class="hint">Voz</label>
+            <select id="voiceSelect" style="width:100%"></select>
+          </div>
+          <button id="btnPreview" title="Prueba corta de la voz">🔊 Prueba</button>
+        </div>
+
+        <div class="sliders">
+          <div class="slider">
+            <label>Velocidad <span id="rateVal">1.0</span></label>
+            <input type="range" id="rate" min="0.5" max="1.8" step="0.1" value="1.0" />
+          </div>
+          <div class="slider">
+            <label>Tono <span id="pitchVal">1.0</span></label>
+            <input type="range" id="pitch" min="0.5" max="2" step="0.1" value="1.0" />
+          </div>
+          <div class="slider">
+            <label>Volumen <span id="volumeVal">1.0</span></label>
+            <input type="range" id="volume" min="0" max="1" step="0.05" value="1" />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:18px">
+      <div class="head">
         <h2>Personajes (voces por rol)</h2>
         <span class="pill" id="castCount">0 personajes</span>
-        <button id="toggleCast" class="ghost" title="Plegar/expandir">⇕</button>
       </div>
-      <div class="body stack" id="castBody">
+      <div class="body stack">
         <div class="row">
           <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
-          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto-detectar desde el texto</button>
+          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto‑detectar desde el texto</button>
         </div>
         <div id="castList" class="cast-list"></div>
-        <div class="hint">Sintaxis: <code>ANA: Hola…</code> o <code>[[ANA]] Hola [[/ANA]]</code>. Sin etiqueta = <em>Narrador</em>.</div>
+        <div class="hint">Sintaxis soportada:
+          <ul>
+            <li><strong>Línea</strong>: <code>ANA: ¿Cómo estás?</code></li>
+            <li><strong>Bloque</strong>: <code>[[LOCUTOR]] Bienvenido al programa… [[/LOCUTOR]]</code></li>
+          </ul>
+          Todo lo que no tenga etiqueta se lee como <em>Narrador</em>.
+        </div>
       </div>
     </section>
   </main>
 
   <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
-    <div id="supportNote">Exportar audio requiere compartir <strong>esta pestaña con audio</strong> (elige la pestaña y marca “Compartir audio”).</div>
+    <div id="supportNote">Para exportar audio: selecciona <strong>Esta pestaña</strong> y marca <strong>Compartir audio</strong>.</div>
     <div class="row" style="justify-content:flex-end"><span id="domStatus" class="pill">Autotest: pendiente</span></div>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
 
-  <script src="app.js?v=1.3.3" defer></script>
+  <script src="app.js?v=1.3.5" defer></script>
 </body>
 </html>
