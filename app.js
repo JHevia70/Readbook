@@ -1,4 +1,4 @@
-// Readbook / app.js v1.4.2 — igual que 1.4.1, cache-bust y numeritos QuickCast
+// Readbook / app.js v1.4.3 — QuickCast numeritos, logo hover glow, export audio
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
@@ -79,16 +79,12 @@
       const row = document.createElement('div');
       row.className = 'cast-item' + (c.locked ? ' locked' : '');
 
-      const name = document.createElement('div');
-      name.className = 'cast-name';
-
+      const name = document.createElement('div'); name.className = 'cast-name';
       const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = c.color || COLORS[i%COLORS.length];
       const picker = document.createElement('input'); picker.type = 'color'; picker.className='color'; picker.value = (c.color || COLORS[i%COLORS.length]);
       picker.oninput = ()=>{ c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast(); };
-
       const input = document.createElement('input'); input.value = c.name || ''; input.placeholder = 'Nombre del personaje'; input.style.width='100%';
       input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); };
-
       name.append(dot, picker, input);
 
       const voiceSel = document.createElement('select');
@@ -114,7 +110,7 @@
       const bPar = document.createElement('button'); bPar.textContent='🧩 Párrafo'; bPar.className='ghost'; bPar.title='Aplicar etiqueta al párrafo';
       bPar.onclick = (e)=>{ const ok = wrapParagraphWithTag(c.name||''); if(ok) flashTip(`Párrafo → ${c.name}`, e); };
       const bTest = document.createElement('button'); bTest.textContent='🔊 Prueba';
-      bTest.onclick = ()=>{ const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice(); const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`); if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u); };
+      bTest.onclick = ()=> previewCharacter(c);
       actions.append(bSel, bPar, bTest);
       if(!c.locked){ const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje'; bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); }; actions.append(bDel); }
 
@@ -423,8 +419,8 @@
     if(els.resume) els.resume.addEventListener('click', resume);
     if(els.stop) els.stop.addEventListener('click', stop);
 
+    // Alt+1..9 => sel o párrafo (funciona incluso en el textarea)
     document.addEventListener('keydown', e=>{
-      // Alt+1..9 => sel o párrafo (incluso en textarea)
       if(e.altKey && /^Digit[1-9]$/.test(e.code)){
         const idx = parseInt(e.code.replace('Digit',''),10) - 1;
         const named = state.cast.filter(c=>!!c.name);

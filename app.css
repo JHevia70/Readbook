@@ -1,4 +1,4 @@
-/* Readbook v1.4.2 — CSS limpio + hotfix logo/tamaños/header + QuickCast numeritos */
+/* Readbook v1.4.3 — CSS limpio + logo SVG autosuficiente con hover glow + QuickCast numeritos */
 :root{
   --bg:#0b1220; --card:#0f172a; --muted:#9aa4b2; --text:#e6eefc;
   --accent:#7c5cff; --accent-2:#23c9a9; --line:#1e293b; --danger:#ef4444;
@@ -14,21 +14,21 @@ h1{font-size:18px;margin:0}
 h2{font-size:16px;margin:0}
 header,main,.foot{max-width:1200px;margin:0 auto;padding:16px 20px}
 
+/* Header + marca */
 .brand{display:flex;align-items:center;gap:12px}
 .brand .logo{
-  flex:0 0 36px; min-width:36px; min-height:36px;
-  width:36px; height:36px; border-radius:10px;
-  display:grid; place-items:center; opacity:1;
-  background:linear-gradient(135deg,#1b2440,#0f172a);
-  border:1px solid #1f2a44;
+  width:36px; height:36px; min-width:36px; min-height:36px;
+  display:grid; place-items:center;
 }
-.brand .logo svg{display:block;width:22px;height:22px}
+.brand .logo .rb-logo{display:block;width:36px;height:36px;transition:filter .25s ease, transform .25s ease}
+.brand .logo:hover .rb-logo{filter:drop-shadow(0 0 10px rgba(124,92,255,.45)); transform:translateY(-1px)}
 .tag{color:var(--muted);font-size:12px}
 
 .row{display:flex;gap:8px;align-items:center}
 .row.no-wrap{flex-wrap:nowrap}
 header .row button{white-space:nowrap; padding:6px 10px}
 
+/* UI base */
 button,select,input,textarea{font:inherit;color:inherit}
 button{padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:#11182a;color:var(--text);cursor:pointer}
 button.primary{background:var(--accent);border-color:transparent;color:white}
@@ -39,10 +39,11 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .pill{background:var(--pill);border:1px solid var(--line);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
 .hint{color:var(--muted);font-size:12px}
 
+/* Grid principal con panel derecho igual altura */
 .grid{
   display:grid; gap:18px;
   grid-template-columns: minmax(0, 1fr) 320px;
-  align-items: stretch; /* misma altura */
+  align-items: stretch;
 }
 .card{
   background:var(--card); border:1px solid var(--line); border-radius:14px;
@@ -52,6 +53,7 @@ button:disabled{opacity:.6;cursor:not-allowed}
 .card .head.small{padding:10px 12px}
 .card .body{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
 
+/* Editor */
 .controls .editor-wrapper{display:flex;flex-direction:column;gap:8px;flex:1;min-height:0}
 textarea#inputText{
   width:100%; flex:1; min-height:280px; resize:vertical;
@@ -60,27 +62,26 @@ textarea#inputText{
 .drop{border:1px dashed var(--line);padding:10px;border-radius:10px;text-align:center;color:var(--muted)}
 .toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 
+/* Estado */
 .status{display:flex;align-items:center;justify-content:space-between;gap:10px}
 progress{width:200px;height:10px;border-radius:999px;overflow:hidden;background:#0e162b;border:1px solid var(--line)}
 progress::-webkit-progress-bar{background:#0e162b}
 progress::-webkit-progress-value{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
 progress::-moz-progress-bar{background:linear-gradient(90deg,var(--accent),var(--accent-2))}
 
+/* Chips */
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chips .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:6px 10px;background:#0f1a30;cursor:grab}
 .dot{display:inline-block;width:10px;height:10px;border-radius:999px;border:1px solid #0002;margin-right:4px}
 
-/* QuickCast + numeritos */
+/* QuickCast */
 .quick-cast{display:flex;flex-direction:column;gap:8px}
 .qc-row{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
 .qc-row .who{display:flex;align-items:center;gap:8px;min-width:0}
 .qc-row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
-.badge{
-  width:18px;height:18px;display:grid;place-items:center;border-radius:999px;
-  background:#1f2a44;color:#e6eefc;border:1px solid var(--line);font-size:11px;flex:0 0 18px;
-}
+.badge{width:18px;height:18px;display:grid;place-items:center;border-radius:999px;background:#1f2a44;color:#e6eefc;border:1px solid var(--line);font-size:11px;flex:0 0 18px}
 
-/* Personajes */
+/* Personajes (panel inferior) */
 .cast-list{display:flex;flex-direction:column;gap:12px}
 .cast-item{display:grid;grid-template-columns:1.2fr 1fr;grid-template-rows:auto auto;gap:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#0c172c}
 .cast-item .cast-name{display:flex;align-items:center;gap:8px}
@@ -88,24 +89,8 @@ progress::-moz-progress-bar{background:linear-gradient(90deg,var(--accent),var(-
 .cast-item .mini{grid-column:1 / -1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .cast-actions{display:flex;gap:8px;flex-wrap:wrap}
 
+/* Footer */
 .foot{max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px}
 
 /* Tooltip fallback */
 .rb-tip{position:fixed;z-index:9999;background:#11182a;color:#e6eefc;border:1px solid rgba(255,255,255,.12);padding:6px 10px;border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transform:translateY(-4px);transition:opacity .15s ease, transform .15s ease;pointer-events:none;font-size:12px}
-
-/* --- hotfix: logo, tamaños y header en una línea --- */
-.brand .logo{
-  flex:0 0 36px; min-width:36px; min-height:36px;
-  width:36px; height:36px; border-radius:10px;
-  display:grid; place-items:center; opacity:1;
-  background:linear-gradient(135deg,#1b2440,#0f172a);
-  border:1px solid #1f2a44;
-}
-.brand .logo svg{display:block;width:22px;height:22px}
-
-body{font-size:16px; line-height:1.45}
-h1{font-size:18px}
-h2{font-size:16px}
-
-header .row{flex-wrap:nowrap; gap:8px}
-header .row button{white-space:nowrap; padding:6px 10px}
