@@ -1,16 +1,5 @@
-const CACHE = 'readbook-v1.3.1'; // bump to flush old cache
-const ASSETS = [
-  './',
-  'index.html',
-  'app.css',
-  'app.js',
-  'manifest.webmanifest',
-  'favicon.ico',
-  'favicon-32.png',
-  'icon-192.png',
-  'icon-512.png',
-  'screenshot.png'
-];
+const CACHE = 'readbook-v1.3.2'; // bump to flush old cache
+const ASSETS = ['./','index.html','app.css','app.js'];
 self.addEventListener('install', (e)=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS))); });
 self.addEventListener('activate', (e)=>{ e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k))))); });
 self.addEventListener('fetch', (e)=>{
