@@ -1,4 +1,4 @@
-// Readbook / app.js v1.3.9 — Export audio + Colores + QuickCast + tooltip
+// Readbook / app.js v1.4.0 — título Readbook + QuickCast altura + ALT+1..9 + export/colores
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
@@ -131,7 +131,7 @@
       rate: 1, pitch: 1, volume: 1,
       color: COLORS[state.cast.length % COLORS.length]
     });
-    save(); renderCast(); renderTagBar(); renderQuickCast();
+    save(); renderCast(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual();
   }
   function renderCast(){
     if(!els.castList) return;
@@ -150,7 +150,6 @@
       const picker = document.createElement('input');
       picker.type = 'color'; picker.className='color';
       picker.value = (c.color || COLORS[i%COLORS.length]);
-      if(c.locked){ /* picker.disabled = true; */ }
       picker.oninput = ()=>{
         c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual();
       };
@@ -487,9 +486,9 @@
   // ===== AUTODETECT =====
   function autodetectNames(t){
     const names=new Set();
-    const re1=/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:/gm; // linea
+    const re1=/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:/gm;
     let m; while((m=re1.exec(t))) names.add((m[1]||'').trim());
-    const re2=/\[\[(?!\/)([^\]]+)\]\]/g; // solo etiquetas de apertura [[NOMBRE]]
+    const re2=/\[\[(?!\/)([^\]]+)\]\]/g;
     while((m=re2.exec(t))){ const nm=(m[1]||'').trim(); if(nm) names.add(nm.replace(/^\//,'')); }
     return Array.from(names).filter(n=>n && n.length<=30);
   }
@@ -548,11 +547,28 @@
     if(els.pause) els.pause.addEventListener('click', pause);
     if(els.resume) els.resume.addEventListener('click', resume);
     if(els.stop) els.stop.addEventListener('click', stop);
+
+    // Atajos: Espacio / S / R (existentes) + ALT+1..9 para etiquetar (sel o párrafo)
     document.addEventListener('keydown', e=>{
-      if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
-      if(e.code==='Space'){ e.preventDefault(); if(speechSynthesis.speaking && !speechSynthesis.paused) pause(); else resume(); }
-      if(e.key==='s'||e.key==='S'){ stop(); }
-      if(e.key==='r'||e.key==='R'){ resume(); }
+      if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')){
+        // permitimos ALT+1..9 aunque estés en textarea si hay Alt
+        if(!(e.altKey && /^Digit[1-9]$/.test(e.code))) return;
+      }
+      if(e.code==='Space' && !e.altKey){ e.preventDefault(); if(speechSynthesis.speaking && !speechSynthesis.paused) pause(); else resume(); return; }
+      if(!e.altKey){
+        if(e.key==='s'||e.key==='S'){ stop(); return; }
+        if(e.key==='r'||e.key==='R'){ resume(); return; }
+      }
+      // ALT+1..9
+      if(e.altKey && /^Digit[1-9]$/.test(e.code)){
+        const idx = parseInt(e.code.replace('Digit',''),10) - 1;
+        const named = state.cast.filter(c=>!!c.name);
+        const c = named[idx];
+        if(!c) return;
+        const selOk = wrapSelectionWithTag(c.name);
+        if(!selOk) wrapParagraphWithTag(c.name);
+        flashTip(`Atajo Alt+${idx+1} → ${c.name}`, e);
+      }
     });
 
     // narrador sliders -> numeritos
@@ -560,11 +576,9 @@
     ['input','change'].forEach(ev=>{ els.rate?.addEventListener(ev,upd); els.pitch?.addEventListener(ev,upd); els.volume?.addEventListener(ev,upd); });
     els.preview?.addEventListener('click', ()=>{ const s=narratorSettings(); const u=new SpeechSynthesisUtterance('Prueba de narrador.'); if(s.voice) u.voice=s.voice; u.lang=s.voice?.lang||'es-ES'; u.rate=s.rate; u.pitch=s.pitch; u.volume=s.volume; speechSynthesis.speak(u); });
 
-    // export audio + toggle view
+    // export audio + toggle view + export .txt
     els.rec?.addEventListener('click', ()=>{ (rec.recording? stopExport() : startExport()); });
     els.toggleView?.addEventListener('click', ()=> setView(state.view==='text' ? 'color' : 'text'));
-
-    // export .txt simple
     els.exportBtn?.addEventListener('click', ()=>{ const blob=new Blob([els.text?.value||''],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='texto_para_leer.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); });
 
     // self check

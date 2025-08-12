@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Lector TTS — Voces por personaje (HTML/CSS/JS)</title>
-  <meta name="description" content="App web sin backend para leer en voz alta guiones o libros. Voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=1.3.9" />
+  <title>Readbook</title>
+  <meta name="description" content="Readbook: lector TTS en el navegador con voces por personaje." />
+  <link rel="stylesheet" href="app.css?v=1.4.0" />
 </head>
 <body>
   <header>
@@ -17,8 +17,8 @@
         </svg>
       </div>
       <div>
-        <h1>Lector TTS</h1>
-        <div class="tag">Guiones con voces por personaje — 100% client-side.</div>
+        <h1>Readbook</h1>
+        <div class="tag">Guiones con voces por personaje — 100% client‑side.</div>
       </div>
     </div>
     <div class="row">
@@ -67,7 +67,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
               </select>
               <button id="btnToggleView" class="ghost" title="Alternar Colores/Etiquetas">🎨 Colores</button>
             </div>
-            <div class="hint">Tip: usa los atajos y el panel derecho para etiquetar rápido.</div>
+            <div class="hint">Tip: panel derecho + atajos <b>Alt+1..9</b> etiquetan al vuelo.</div>
           </div>
 
           <div class="quick-tags stack">
@@ -91,7 +91,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
         </div>
       </section>
 
-      <!-- Columna derecha -->
+      <!-- Columna derecha: QuickCast -->
       <section class="card" id="rightPanel">
         <div class="head small">
           <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
@@ -142,7 +142,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
       <div class="body stack">
         <div class="row">
           <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
-          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto-detectar desde el texto</button>
+          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto‑detectar desde el texto</button>
         </div>
         <div id="castList" class="cast-list"></div>
         <div class="hint">Sintaxis soportada:
@@ -156,12 +156,12 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
     </section>
   </main>
 
-  <footer style="max-width:1200px; margin:24px auto; padding:0 20px; color:var(--muted); font-size:13px">
+  <footer class="foot">
     <div id="supportNote">Para exportar audio: selecciona <strong>Esta pestaña</strong> y marca <strong>Compartir audio</strong>.</div>
     <div class="row" style="justify-content:flex-end"><span id="domStatus" class="pill">Autotest: pendiente</span></div>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
 
-  <script src="app.js?v=1.3.9" defer></script>
+  <script src="app.js?v=1.4.0" defer></script>
 </body>
 </html>
