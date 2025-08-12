@@ -1,9 +1,10 @@
-// Readbook / app.js v1.3.8 — Right panel QuickCast + mini tooltip + bugfix
+// Readbook / app.js v1.3.9 — Export audio + Colores + QuickCast + tooltip
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
     // texto
     text: $('#inputText'),
+    visual: $('#editorVisual'),
     file: $('#fileInput'),
     drop: $('#dropZone'),
     wordCount: $('#wordCount'),
@@ -31,6 +32,10 @@
     tagBar: $('#tagBar'),
     applyTagSelect: $('#applyTagSelect'),
     applyTagBtn: $('#applyTagBtn'),
+    // export & view
+    rec: $('#btnRec'),
+    recFormat: $('#recFormat'),
+    toggleView: $('#btnToggleView'),
     // quick cast
     quickCast: $('#quickCastList'),
     // misc
@@ -51,12 +56,13 @@
     speaking: false,
     paused: false,
     canceling: false,
-    idc: 0
+    idc: 0,
+    view: localStorage.getItem('view_mode') || 'text'
   };
   const COLORS = ['#7c5cff','#23c9a9','#ff6b6b','#ffce57','#22c55e','#60a5fa','#f472b6','#f59e0b','#10b981','#a78bfa'];
   const norm = (s='')=> s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const uid = ()=> 'id_'+Date.now()+'_'+(++state.idc);
-  const save = ()=>{ try{ localStorage.setItem('tts_text', els.text?.value||''); localStorage.setItem('tts_cast', JSON.stringify(state.cast)); }catch{} };
+  const save = ()=>{ try{ localStorage.setItem('tts_text', els.text?.value||''); localStorage.setItem('tts_cast', JSON.stringify(state.cast)); localStorage.setItem('view_mode', state.view); }catch{} };
   const load = ()=>{ try{ const t=localStorage.getItem('tts_text'); if(t && els.text) els.text.value=t; const c=localStorage.getItem('tts_cast'); if(c) state.cast=JSON.parse(c); ensureColors(); }catch{} updateCounts(); };
 
   function ensureColors(){
@@ -77,6 +83,7 @@
     renderVoiceSelect();
     ensureNarrator();
     renderCast(); renderTagBar(); renderQuickCast();
+    if(state.view==='color') renderVisual();
   }
   function pickDefaultVoice(){
     return state.voices.find(v => (v.lang||'').toLowerCase().startsWith('es')) || state.voices[0];
@@ -145,12 +152,12 @@
       picker.value = (c.color || COLORS[i%COLORS.length]);
       if(c.locked){ /* picker.disabled = true; */ }
       picker.oninput = ()=>{
-        c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast();
+        c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual();
       };
 
       const input = document.createElement('input');
       input.value = c.name || ''; input.placeholder = 'Nombre del personaje'; input.style.width='100%';
-      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); };
+      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual(); };
 
       name.append(dot, picker, input);
 
@@ -189,7 +196,7 @@
       actions.append(bSel, bPar, bTest);
       if(!c.locked){
         const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje';
-        bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); };
+        bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual(); };
         actions.append(bDel);
       }
 
@@ -255,7 +262,7 @@
     const v=el.value;
     el.value = v.slice(0,start) + open + ' ' + v.slice(start,end) + ' ' + close + v.slice(end);
     el.setSelectionRange((v.slice(0,start)+open+' ').length,(v.slice(0,start)+open+' ').length);
-    save(); updateCounts();
+    save(); updateCounts(); if(state.view==='color') renderVisual();
     return true;
   }
   function getParagraphBounds(value,start,end){
@@ -278,7 +285,7 @@
     const open=`[[${name}]] `, close=` [[/${name}]]`;
     el.value = el.value.slice(0,s) + open + inside + close + el.value.slice(e);
     el.setSelectionRange((el.value.slice(0,s)+open).length,(el.value.slice(0,s)+open).length);
-    save(); updateCounts();
+    save(); updateCounts(); if(state.view==='color') renderVisual();
     return true;
   }
 
@@ -290,6 +297,121 @@
     ['dragleave','dragend','drop'].forEach(ev=> el.addEventListener(ev, e=> el.classList.remove('drop-active')));
     el.addEventListener('drop', e=>{ const spk=e.dataTransfer?.getData('text/x-speaker'); if(!spk) return; e.preventDefault(); wrapSelectionWithTag(spk); });
   }
+
+  // ===== VISUAL (Colores) =====
+  const esc = (s)=> s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  function colorFor(name, idx){ const c = state.cast.find(x => norm(x.name)===norm(name))?.color; return c || COLORS[idx % COLORS.length]; }
+  function renderVisual(){
+    if(!els.visual) return;
+    const raw=(els.text?.value||''); if(!raw.trim()){ els.visual.innerHTML=''; return; }
+    const t = convertVozBlocks(raw);
+    const out=[]; const re=/\[\[([^\]]+)\]\]([\s\S]*?)\[\[\/\1\]\]/g; let last=0, m, idx=0;
+    while((m=re.exec(t))){ if(m.index>last){ const outside=t.slice(last,m.index); if(outside) out.push({speaker:null, text:outside}); } out.push({speaker:(m[1]||'').trim(), text:(m[2]||'')}); last=re.lastIndex; }
+    if(last<t.length) out.push({speaker:null, text:t.slice(last)});
+    const parts=[];
+    for(const seg of out.length?out:[{speaker:null,text:t}]){
+      if(seg.speaker){ parts.push(seg); continue; }
+      const lines=seg.text.split(/(\n+)/);
+      for(const line of lines){
+        if(!line) continue; if(line.match(/^\n+$/)){ parts.push({speaker:null, text:line}); continue; }
+        const mm=line.match(/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:\s*(.+)$/);
+        if(mm) parts.push({speaker:mm[1].trim(), text:mm[2]}); else parts.push({speaker:null, text:line});
+      }
+    }
+    let html=''; let ci=0;
+    for(const p of parts){
+      if(p.speaker){ const col=colorFor(p.speaker, ci++); html += `<span class="seg" style="background:${col}20;border:1px solid ${col}55">${esc(p.text)}</span>`; }
+      else html += esc(p.text);
+    }
+    els.visual.innerHTML=html;
+  }
+  function setView(mode){
+    state.view=mode;
+    if(mode==='color'){ els.text.hidden=true; els.visual.hidden=false; renderVisual(); els.toggleView.textContent='🏷️ Etiquetas'; }
+    else { els.visual.hidden=true; els.text.hidden=false; els.toggleView.textContent='🎨 Colores'; }
+    save();
+  }
+
+  // ===== EXPORT AUDIO =====
+  const rec = { recording:false, mr:null, stream:null, chunks:[] };
+  function guessMime(){ const prefs=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg']; for(const m of prefs){ if(MediaRecorder.isTypeSupported(m)) return m; } return ''; }
+  async function startExport(){
+    if(rec.recording) return;
+    try{
+      rec.stream = await navigator.mediaDevices.getDisplayMedia({ video:true, audio:true });
+      const mimeType = guessMime();
+      rec.mr = new MediaRecorder(rec.stream, mimeType? {mimeType}: {});
+      rec.chunks = []; rec.recording = true;
+      rec.mr.ondataavailable = e => { if(e.data && e.data.size) rec.chunks.push(e.data); };
+      rec.mr.onstop = async () => { await processExport(); cleanupStream(); };
+      rec.mr.start(200);
+      els.rec.textContent='⏹️ Detener';
+      els.live && (els.live.textContent='Grabando… Selecciona ESTA pestaña + Compartir audio.');
+    }catch(e){
+      console.error(e); els.live && (els.live.textContent='No se pudo iniciar la exportación (permiso/navegador).');
+    }
+  }
+  function stopExport(){ if(!rec.recording) return; try{ rec.mr?.stop(); }catch{} rec.recording=false; els.rec.textContent='⏺️ Exportar audio'; }
+  async function processExport(){
+    const blob = new Blob(rec.chunks, {type: rec.mr?.mimeType || 'audio/webm'});
+    const fmt = els.recFormat?.value || 'wav';
+    if(fmt==='webm'){ downloadBlob(blob, 'readbook.webm'); els.live&&(els.live.textContent='Exportado WEBM/Opus.'); return; }
+    try{
+      const arrayBuf = await blob.arrayBuffer();
+      const ac = new (window.AudioContext || window.webkitAudioContext)();
+      const audioBuf = await ac.decodeAudioData(arrayBuf.slice(0));
+      if(fmt==='wav'){ const wav=encodeWAV(audioBuf); downloadBlob(wav, 'readbook.wav'); els.live&&(els.live.textContent='Exportado WAV.'); return; }
+      if(fmt==='mp3'){
+        try{ await loadLame(); const mp3=encodeMP3(audioBuf); downloadBlob(mp3, 'readbook.mp3'); els.live&&(els.live.textContent='Exportado MP3 (beta).'); return; }
+        catch(e){ console.warn('MP3 falló', e); const wav=encodeWAV(audioBuf); downloadBlob(wav, 'readbook.wav'); els.live&&(els.live.textContent='MP3 no disponible, exportado WAV.'); }
+      }
+    }catch(e){
+      console.error('decode/export failed', e); downloadBlob(blob, 'readbook.webm'); els.live&&(els.live.textContent='No pude convertir; exporté WEBM/Opus.');
+    }
+  }
+  function cleanupStream(){ rec.stream?.getTracks().forEach(t=>t.stop()); rec.stream=null; rec.mr=null; els.rec.textContent='⏺️ Exportar audio'; }
+  function downloadBlob(blob, name){ const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url), 1000); }
+  function loadLame(){ if(window.lamejs) return Promise.resolve(); return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://unpkg.com/lamejs@1.2.0/lame.min.js'; s.onload=()=>res(); s.onerror=()=>rej(new Error('No lamejs')); document.head.appendChild(s); }); }
+  function encodeWAV(audioBuffer){
+    const numChannels = audioBuffer.numberOfChannels; const sampleRate = audioBuffer.sampleRate;
+    const pcm = interleave(audioBuffer); const bps=2; const blockAlign = numChannels*bps;
+    const buf = new ArrayBuffer(44 + pcm.length*bps); const view=new DataView(buf);
+    writeStr(view,0,'RIFF'); view.setUint32(4,36+pcm.length*bps,true); writeStr(view,8,'WAVE'); writeStr(view,12,'fmt ');
+    view.setUint32(16,16,true); view.setUint16(20,1,true); view.setUint16(22,numChannels,true); view.setUint32(24,sampleRate,true);
+    view.setUint32(28,sampleRate*blockAlign,true); view.setUint16(32,blockAlign,true); view.setUint16(34,bps*8,true); writeStr(view,36,'data');
+    view.setUint32(40, pcm.length*bps, true); floatTo16(view, 44, pcm); return new Blob([view], {type:'audio/wav'});
+  }
+  function encodeMP3(audioBuffer){
+    const numChannels = Math.min(2, audioBuffer.numberOfChannels);
+    const sampleRate = audioBuffer.sampleRate;
+    const left = audioBuffer.getChannelData(0);
+    const right = numChannels>1 ? audioBuffer.getChannelData(1) : null;
+    const enc = new lamejs.Mp3Encoder(numChannels, sampleRate, 128);
+    const frame = 1152; const data=[];
+    for(let i=0;i<left.length;i+=frame){
+      const l = floatToI16(left.subarray(i, i+frame));
+      const r = right? floatToI16(right.subarray(i, i+frame)) : null;
+      const out = enc.encodeBuffer(l, r);
+      if(out.length) data.push(new Int8Array(out));
+    }
+    const end = enc.flush(); if(end.length) data.push(new Int8Array(end));
+    return new Blob(data, {type:'audio/mpeg'});
+  }
+  function interleave(audioBuffer){
+    const n = Math.min(2, audioBuffer.numberOfChannels), len=audioBuffer.length;
+    if(n===1) return audioBuffer.getChannelData(0).slice(0);
+    const L=audioBuffer.getChannelData(0), R=audioBuffer.getChannelData(1);
+    const out=new Float32Array(len*2); let j=0; for(let i=0;i<len;i++){ out[j++]=L[i]; out[j++]=R[i]; } return out;
+  }
+  function floatTo16(view, offset, input){
+    for(let i=0;i<input.length;i++, offset+=2){ let s=Math.max(-1, Math.min(1, input[i])); view.setInt16(offset, s<0 ? s*0x8000 : s*0x7FFF, true); }
+  }
+  function floatToI16(f32){
+    const out=new Int16Array(f32.length);
+    for(let i=0;i<f32.length;i++){ let s=Math.max(-1, Math.min(1, f32[i])); out[i]= s<0 ? s*0x8000 : s*0x7FFF; }
+    return out;
+  }
+  function writeStr(view, offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
 
   // ===== PARSER + LECTOR =====
   const convertVozBlocks = str => str.replace(/\[voz=([^\]]+)\]([\s\S]*?)\[\/voz\]/gi,(_,n,inn)=>`[[${(n||'').trim()}]]${inn}[[/${(n||'').trim()}]]`);
@@ -402,10 +524,10 @@
   function formatTime(mins){ if(!isFinite(mins)) return '–'; const total=Math.max(0,Math.round(mins*60)); const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60; return h>0?`${h}h ${m}m`:(m>0?`${m}m ${s}s`:`${s}s`); }
   function toast(msg){ if(els.live){ els.live.textContent = msg; setTimeout(()=>{ if(els.live.textContent===msg) els.live.textContent=''; }, 2500); } }
 
-  function readFile(file){ if(!file) return; const reader=new FileReader(); reader.onload=()=>{ if(els.text){ els.text.value=String(reader.result||''); save(); updateCounts(); } }; reader.readAsText(file); }
+  function readFile(file){ if(!file) return; const reader=new FileReader(); reader.onload=()=>{ if(els.text){ els.text.value=String(reader.result||''); save(); updateCounts(); if(state.view==='color') renderVisual(); } }; reader.readAsText(file); }
 
   function bindBasics(){
-    if(els.text) els.text.addEventListener('input', ()=>{ save(); updateCounts(); });
+    if(els.text) els.text.addEventListener('input', ()=>{ save(); updateCounts(); if(state.view==='color') renderVisual(); });
     if(els.file) els.file.addEventListener('change', e=>{ const f=e.target.files?.[0]; readFile(f); e.target.value=''; });
     if(els.drop){
       ['dragenter','dragover'].forEach(ev=> els.drop.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); els.drop.classList.add('dragover'); }));
@@ -438,32 +560,37 @@
     ['input','change'].forEach(ev=>{ els.rate?.addEventListener(ev,upd); els.pitch?.addEventListener(ev,upd); els.volume?.addEventListener(ev,upd); });
     els.preview?.addEventListener('click', ()=>{ const s=narratorSettings(); const u=new SpeechSynthesisUtterance('Prueba de narrador.'); if(s.voice) u.voice=s.voice; u.lang=s.voice?.lang||'es-ES'; u.rate=s.rate; u.pitch=s.pitch; u.volume=s.volume; speechSynthesis.speak(u); });
 
+    // export audio + toggle view
+    els.rec?.addEventListener('click', ()=>{ (rec.recording? stopExport() : startExport()); });
+    els.toggleView?.addEventListener('click', ()=> setView(state.view==='text' ? 'color' : 'text'));
+
+    // export .txt simple
+    els.exportBtn?.addEventListener('click', ()=>{ const blob=new Blob([els.text?.value||''],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='texto_para_leer.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); });
+
     // self check
     els.selfCheck?.addEventListener('click', ()=>{
       const issues=[];
+      if(!els.rec) issues.push('Falta #btnRec');
+      if(!els.toggleView) issues.push('Falta #btnToggleView');
       if(!els.quickCast) issues.push('Falta #quickCastList');
-      if(!els.castList) issues.push('Falta #castList');
-      if(!els.applyTagBtn) issues.push('Falta #applyTagBtn');
+      if(!els.visual) issues.push('Falta #editorVisual');
       els.domStatus && (els.domStatus.textContent = issues.length? `Autotest: ${issues.length}` : 'Autotest: OK ✅');
       toast(issues.length? `Autotest: ${issues.join(' • ')}` : 'Autotest: OK ✅');
     });
   }
 
-  function init(){
+  document.addEventListener('DOMContentLoaded', ()=>{
     load();
     if(supportsTTS){
       populateVoices();
-      if (typeof speechSynthesis !== 'undefined') {
-        speechSynthesis.onvoiceschanged = populateVoices;
-      }
+      if (typeof speechSynthesis !== 'undefined') speechSynthesis.onvoiceschanged = populateVoices;
     } else {
       toast('Tu navegador no soporta Web Speech API.');
     }
     bindBasics();
     ensureNarrator(); ensureColors();
     renderCast(); renderTagBar(); renderQuickCast();
+    if(state.view==='color') setView('color'); else setView('text');
     updateCounts();
-  }
-
-  document.addEventListener('DOMContentLoaded', init);
+  });
 })();
