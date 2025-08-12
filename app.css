@@ -86,6 +86,10 @@ progress::-moz-progress-bar{background: linear-gradient(90deg, var(--accent), va
 .mini input[type=range]{width:100%}
 .cast-actions{display:flex; gap:8px; justify-content:flex-end}
 
+/* Narrador bloqueado (no borrar) */
+.cast-item.locked{ border-style: dashed; }
+.cast-item.locked .danger{ display:none; }
+
 /* Quick tag chips */
 .chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
 .chip{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:#0f1422; user-select:none; cursor:grab}
@@ -118,7 +122,7 @@ textarea.drop-active{outline:2px dashed var(--accent); outline-offset:2px}
 .col-resizer:hover::before{ background: rgba(124,92,255,.66); }
 @media (max-width:1100px){ .col-resizer{ display:none } }
 
-/* Light-mode auto if prefer-color-scheme says so (kept simple) */
+/* Light-mode auto */
 @media (prefers-color-scheme: light){
   :root{
     --bg: #f7f9fc;
@@ -138,8 +142,8 @@ textarea.drop-active{outline:2px dashed var(--accent); outline-offset:2px}
   progress::-webkit-progress-bar{ background: #e5e7eb; }
 }
 
-/* ---------- Quick-cast list in right panel ---------- */
-.quick-cast{ display:grid; gap:8px; max-height: 280px; overflow:auto; padding-right:4px }
+/* Quick-cast (panel derecho) */
+.quick-cast{ display:grid; gap:8px; max-height: 420px; overflow:auto; padding-right:4px }
 .quick-cast .qc-row{ display:flex; align-items:center; gap:8px; justify-content:space-between; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:8px; background:#0f1422 }
 :root[data-theme="light"] .quick-cast .qc-row{ background:#ffffff; border-color: rgba(0,0,0,.08) }
 .qc-row .who{ display:flex; align-items:center; gap:8px; min-width:0 }
