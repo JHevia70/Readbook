@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Readbook</title>
   <meta name="description" content="Readbook: lector TTS en el navegador con voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=1.4.0" />
+  <link rel="stylesheet" href="app.css?v=1.4.2" />
 </head>
 <body>
   <header>
@@ -18,10 +18,10 @@
       </div>
       <div>
         <h1>Readbook</h1>
-        <div class="tag">Guiones con voces por personaje — 100% client‑side.</div>
+        <div class="tag">Guiones con voces por personaje — 100% client-side.</div>
       </div>
     </div>
-    <div class="row">
+    <div class="row no-wrap">
       <button id="btnExport" class="ghost" title="Exportar tu texto a .txt">Exportar .txt</button>
       <button id="btnReset" class="danger" title="Limpiar todo">Limpiar</button>
       <button id="btnSelfCheck" class="ghost" title="Autocomprobación rápida del DOM">🧪 Comprobar</button>
@@ -30,7 +30,7 @@
 
   <main>
     <div class="grid">
-      <!-- Columna izquierda -->
+      <!-- Izquierda -->
       <section class="card controls">
         <div class="head">
           <h2>Tu texto</h2>
@@ -44,7 +44,6 @@
 2) Bloque: [[NOMBRE]] texto… [[/NOMBRE]]
 
 El resto se lee con la voz por defecto (Narrador)."></textarea>
-            <div id="editorVisual" class="editor-visual" hidden></div>
           </div>
           <div class="row">
             <label class="drop" id="dropZone" style="flex:1">Suelta aquí tu archivo .txt/.md</label>
@@ -67,7 +66,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
               </select>
               <button id="btnToggleView" class="ghost" title="Alternar Colores/Etiquetas">🎨 Colores</button>
             </div>
-            <div class="hint">Tip: panel derecho + atajos <b>Alt+1..9</b> etiquetan al vuelo.</div>
+            <div class="hint">Atajos: <b>Alt+1..9</b> etiqueta al vuelo. Panel derecho = asignación rápida.</div>
           </div>
 
           <div class="quick-tags stack">
@@ -91,11 +90,11 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
         </div>
       </section>
 
-      <!-- Columna derecha: QuickCast -->
+      <!-- Derecha -->
       <section class="card" id="rightPanel">
         <div class="head small">
           <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
-          <span class="hint">Sel. / Párr / 🔊</span>
+          <span class="hint">Sel. / Párr / 🔊 / Alt+1..9</span>
         </div>
         <div class="body">
           <div id="quickCastList" class="quick-cast"></div>
@@ -142,7 +141,7 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
       <div class="body stack">
         <div class="row">
           <button id="btnAddChar" class="ghost">＋ Añadir personaje</button>
-          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto‑detectar desde el texto</button>
+          <button id="btnAutoDetect" title="Detecta nombres en el texto y los añade a la lista">🪄 Auto-detectar desde el texto</button>
         </div>
         <div id="castList" class="cast-list"></div>
         <div class="hint">Sintaxis soportada:
@@ -162,6 +161,6 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
 
-  <script src="app.js?v=1.4.0" defer></script>
+  <script src="app.js?v=1.4.2" defer></script>
 </body>
 </html>

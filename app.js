@@ -1,15 +1,12 @@
-// Readbook / app.js v1.4.0 — título Readbook + QuickCast altura + ALT+1..9 + export/colores
+// Readbook / app.js v1.4.2 — igual que 1.4.1, cache-bust y numeritos QuickCast
 (function(){
   const $ = s => document.querySelector(s);
   const els = {
-    // texto
     text: $('#inputText'),
-    visual: $('#editorVisual'),
     file: $('#fileInput'),
     drop: $('#dropZone'),
     wordCount: $('#wordCount'),
     estimates: $('#estimates'),
-    // lector
     play: $('#btnPlay'),
     pause: $('#btnPause'),
     resume: $('#btnResume'),
@@ -17,28 +14,22 @@
     progress: $('#progress'),
     now: $('#nowReading'),
     live: $('#live'),
-    // narrador (voz por defecto)
     voiceSel: $('#voiceSelect'),
     rate: $('#rate'), pitch: $('#pitch'), volume: $('#volume'),
     rateVal: $('#rateVal'), pitchVal: $('#pitchVal'), volumeVal: $('#volumeVal'),
     langHint: $('#langHint'),
     preview: $('#btnPreview'),
-    // personajes
     castList: $('#castList'),
     castCount: $('#castCount'),
     btnAdd: $('#btnAddChar'),
     btnAuto: $('#btnAutoDetect'),
-    // chips
     tagBar: $('#tagBar'),
     applyTagSelect: $('#applyTagSelect'),
     applyTagBtn: $('#applyTagBtn'),
-    // export & view
     rec: $('#btnRec'),
     recFormat: $('#recFormat'),
     toggleView: $('#btnToggleView'),
-    // quick cast
     quickCast: $('#quickCastList'),
-    // misc
     exportBtn: $('#btnExport'),
     resetBtn: $('#btnReset'),
     selfCheck: $('#btnSelfCheck'),
@@ -47,31 +38,15 @@
 
   const supportsTTS = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
 
-  // ===== STATE =====
-  const state = {
-    voices: [],
-    cast: [],
-    queue: [],
-    idx: 0,
-    speaking: false,
-    paused: false,
-    canceling: false,
-    idc: 0,
-    view: localStorage.getItem('view_mode') || 'text'
-  };
+  const state = { voices: [], cast: [], queue: [], idx: 0, speaking:false, paused:false, canceling:false, idc:0, view: localStorage.getItem('view_mode') || 'text' };
   const COLORS = ['#7c5cff','#23c9a9','#ff6b6b','#ffce57','#22c55e','#60a5fa','#f472b6','#f59e0b','#10b981','#a78bfa'];
   const norm = (s='')=> s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
   const uid = ()=> 'id_'+Date.now()+'_'+(++state.idc);
   const save = ()=>{ try{ localStorage.setItem('tts_text', els.text?.value||''); localStorage.setItem('tts_cast', JSON.stringify(state.cast)); localStorage.setItem('view_mode', state.view); }catch{} };
   const load = ()=>{ try{ const t=localStorage.getItem('tts_text'); if(t && els.text) els.text.value=t; const c=localStorage.getItem('tts_cast'); if(c) state.cast=JSON.parse(c); ensureColors(); }catch{} updateCounts(); };
 
-  function ensureColors(){
-    let changed=false;
-    (state.cast||[]).forEach((c,i)=>{ if(!c.color){ c.color = c.locked ? '#64748b' : COLORS[i % COLORS.length]; changed=true; } });
-    if(changed) save();
-  }
+  function ensureColors(){ let changed=false; (state.cast||[]).forEach((c,i)=>{ if(!c.color){ c.color = c.locked ? '#64748b' : COLORS[i % COLORS.length]; changed=true; } }); if(changed) save(); }
 
-  // ===== VOICES =====
   function populateVoices(){
     const list = speechSynthesis.getVoices() || [];
     state.voices = list.slice().sort((a,b)=>{
@@ -80,59 +55,23 @@
       const la=(a.lang||'').localeCompare(b.lang||''); if(la!==0) return la;
       return (a.name||'').localeCompare(b.name||'');
     });
-    renderVoiceSelect();
-    ensureNarrator();
-    renderCast(); renderTagBar(); renderQuickCast();
-    if(state.view==='color') renderVisual();
+    renderVoiceSelect(); ensureNarrator(); renderCast(); renderTagBar(); renderQuickCast();
   }
-  function pickDefaultVoice(){
-    return state.voices.find(v => (v.lang||'').toLowerCase().startsWith('es')) || state.voices[0];
-  }
+  function pickDefaultVoice(){ return state.voices.find(v => (v.lang||'').toLowerCase().startsWith('es')) || state.voices[0]; }
   function renderVoiceSelect(){
     if(!els.voiceSel) return;
     els.voiceSel.innerHTML = '';
-    state.voices.forEach(v=>{
-      const o=document.createElement('option');
-      o.value=v.voiceURI;
-      o.textContent=`${v.name} — ${v.lang}${v.default?' (pred.)':''}`;
-      els.voiceSel.appendChild(o);
-    });
-    const def = pickDefaultVoice();
-    if(def) els.voiceSel.value = def.voiceURI;
-    if(els.langHint) els.langHint.textContent = def?.lang || '–';
+    state.voices.forEach(v=>{ const o=document.createElement('option'); o.value=v.voiceURI; o.textContent=`${v.name} — ${v.lang}${v.default?' (pred.)':''}`; els.voiceSel.appendChild(o); });
+    const def = pickDefaultVoice(); if(def) els.voiceSel.value = def.voiceURI; if(els.langHint) els.langHint.textContent = def?.lang || '–';
   }
-  function narratorSettings(){
-    const v = state.voices.find(v=>v.voiceURI===els.voiceSel?.value) || pickDefaultVoice();
-    return {
-      voice: v,
-      rate: parseFloat(els.rate?.value||'1')||1,
-      pitch: parseFloat(els.pitch?.value||'1')||1,
-      volume: parseFloat(els.volume?.value||'1')||1,
-    };
-  }
+  function narratorSettings(){ const v = state.voices.find(v=>v.voiceURI===els.voiceSel?.value) || pickDefaultVoice(); return { voice: v, rate: parseFloat(els.rate?.value||'1')||1, pitch: parseFloat(els.pitch?.value||'1')||1, volume: parseFloat(els.volume?.value||'1')||1 }; }
 
-  // ===== CAST =====
   function ensureNarrator(){
     const has = state.cast.some(c => norm(c.name)==='narrador');
-    if(!has){
-      const v = pickDefaultVoice();
-      state.cast.unshift({
-        id: uid(), name: 'Narrador',
-        voiceURI: v?.voiceURI, rate: 1, pitch: 1, volume: 1,
-        color: '#64748b', locked: true
-      });
-      save();
-    }
+    if(!has){ const v = pickDefaultVoice(); state.cast.unshift({ id: uid(), name: 'Narrador', voiceURI: v?.voiceURI, rate:1, pitch:1, volume:1, color:'#64748b', locked:true }); save(); }
   }
-  function addCharacter(name=''){
-    state.cast.push({
-      id: uid(), name,
-      voiceURI: pickDefaultVoice()?.voiceURI,
-      rate: 1, pitch: 1, volume: 1,
-      color: COLORS[state.cast.length % COLORS.length]
-    });
-    save(); renderCast(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual();
-  }
+  function addCharacter(name=''){ state.cast.push({ id: uid(), name, voiceURI: pickDefaultVoice()?.voiceURI, rate:1, pitch:1, volume:1, color: COLORS[state.cast.length % COLORS.length] }); save(); renderCast(); renderTagBar(); renderQuickCast(); }
+
   function renderCast(){
     if(!els.castList) return;
     els.castList.innerHTML = '';
@@ -143,61 +82,41 @@
       const name = document.createElement('div');
       name.className = 'cast-name';
 
-      // dot + color picker + nombre
-      const dot = document.createElement('span');
-      dot.className = 'dot'; dot.style.background = c.color || COLORS[i%COLORS.length];
+      const dot = document.createElement('span'); dot.className = 'dot'; dot.style.background = c.color || COLORS[i%COLORS.length];
+      const picker = document.createElement('input'); picker.type = 'color'; picker.className='color'; picker.value = (c.color || COLORS[i%COLORS.length]);
+      picker.oninput = ()=>{ c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast(); };
 
-      const picker = document.createElement('input');
-      picker.type = 'color'; picker.className='color';
-      picker.value = (c.color || COLORS[i%COLORS.length]);
-      picker.oninput = ()=>{
-        c.color = picker.value; dot.style.background = c.color; save(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual();
-      };
-
-      const input = document.createElement('input');
-      input.value = c.name || ''; input.placeholder = 'Nombre del personaje'; input.style.width='100%';
-      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual(); };
+      const input = document.createElement('input'); input.value = c.name || ''; input.placeholder = 'Nombre del personaje'; input.style.width='100%';
+      input.oninput = ()=>{ c.name = input.value; save(); renderTagBar(); renderQuickCast(); };
 
       name.append(dot, picker, input);
 
-      // voice select
       const voiceSel = document.createElement('select');
       state.voices.forEach(v=>{ const o=document.createElement('option'); o.value=v.voiceURI; o.textContent=`${v.name} — ${v.lang}${v.default?' (pred.)':''}`; voiceSel.appendChild(o); });
       if(!state.voices.some(v=>v.voiceURI===c.voiceURI)) c.voiceURI = pickDefaultVoice()?.voiceURI;
       voiceSel.value = c.voiceURI || '';
       voiceSel.onchange = ()=>{ c.voiceURI = voiceSel.value; save(); };
 
-      // sliders mini
       const mini = document.createElement('div'); mini.className='mini';
       mini.innerHTML = `
         <div><label>Vel <span>${(c.rate??1).toFixed(1)}</span></label><input class="rate" type="range" min="0.5" max="1.8" step="0.1" value="${c.rate??1}"></div>
         <div><label>Tono <span>${(c.pitch??1).toFixed(1)}</span></label><input class="pitch" type="range" min="0.5" max="2" step="0.1" value="${c.pitch??1}"></div>
         <div><label>Vol <span>${(c.volume??1).toFixed(2)}</span></label><input class="vol" type="range" min="0" max="1" step="0.05" value="${c.volume??1}"></div>
       `;
-      const [r,p,v] = mini.querySelectorAll('input');
-      const [rl,pl,vl] = mini.querySelectorAll('label span');
+      const [r,p,v] = mini.querySelectorAll('input'); const [rl,pl,vl] = mini.querySelectorAll('label span');
       r.oninput=()=>{ c.rate=parseFloat(r.value)||1; rl.textContent=c.rate.toFixed(1); save(); };
       p.oninput=()=>{ c.pitch=parseFloat(p.value)||1; pl.textContent=c.pitch.toFixed(1); save(); };
       v.oninput=()=>{ c.volume=parseFloat(v.value)||1; vl.textContent=c.volume.toFixed(2); save(); };
 
-      // acciones
       const actions = document.createElement('div'); actions.className='cast-actions';
-      const bSel = document.createElement('button'); bSel.textContent='🏷️ Asignar sel.'; bSel.className='ghost'; bSel.title='Aplicar etiqueta al texto seleccionado';
+      const bSel = document.createElement('button'); bSel.textContent='🏷️ Asignar selección'; bSel.className='ghost'; bSel.title='Aplicar etiqueta al texto seleccionado';
       bSel.onclick = (e)=>{ const ok = wrapSelectionWithTag(c.name||''); if(ok) flashTip(`Etiquetado: ${c.name}`, e); };
-      const bPar = document.createElement('button'); bPar.textContent='🧩 Párr'; bPar.className='ghost'; bPar.title='Aplicar etiqueta al párrafo';
+      const bPar = document.createElement('button'); bPar.textContent='🧩 Párrafo'; bPar.className='ghost'; bPar.title='Aplicar etiqueta al párrafo';
       bPar.onclick = (e)=>{ const ok = wrapParagraphWithTag(c.name||''); if(ok) flashTip(`Párrafo → ${c.name}`, e); };
       const bTest = document.createElement('button'); bTest.textContent='🔊 Prueba';
-      bTest.onclick = ()=>{
-        const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice();
-        const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`);
-        if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u);
-      };
+      bTest.onclick = ()=>{ const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice(); const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`); if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u); };
       actions.append(bSel, bPar, bTest);
-      if(!c.locked){
-        const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje';
-        bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); if(state.view==='color') renderVisual(); };
-        actions.append(bDel);
-      }
+      if(!c.locked){ const bDel=document.createElement('button'); bDel.textContent='🗑️'; bDel.className='danger'; bDel.title='Eliminar personaje'; bDel.onclick=()=>{ state.cast=state.cast.filter(x=>x.id!==c.id); save(); renderCast(); renderTagBar(); renderQuickCast(); }; actions.append(bDel); }
 
       row.append(name, voiceSel, mini, actions);
       els.castList.appendChild(row);
@@ -205,23 +124,24 @@
     if(els.castCount) els.castCount.textContent = `${state.cast.length} personaje${state.cast.length===1?'':'s'}`;
   }
 
-  // ===== QUICK CAST (panel derecho) =====
   function renderQuickCast(){
     if(!els.quickCast) return;
     els.quickCast.innerHTML='';
-    state.cast.forEach((c,i)=>{
-      if(!c.name) return;
+    const named = state.cast.filter(c=>!!c.name);
+    named.forEach((c,i)=>{
+      const idx=i+1;
       const row=document.createElement('div');
       row.className='qc-row';
       row.innerHTML=`
         <div class="who">
+          <span class="badge">${idx<=9?idx:''}</span>
           <span class="dot" style="background:${c.color||COLORS[i%COLORS.length]}"></span>
           <span class="name">${c.name}</span>
         </div>
         <div class="actions">
-          <button class="ghost sel">🏷️ Sel.</button>
-          <button class="ghost par">🧩 Párr</button>
-          <button class="ghost test">🔊</button>
+          <button class="ghost sel" title="Asignar selección (Alt+${idx<=9?idx:'-'})">🏷️ Sel.</button>
+          <button class="ghost par" title="Párrafo (Alt+${idx<=9?idx:'-'})">🧩 Párr</button>
+          <button class="ghost test" title="Prueba">🔊</button>
         </div>`;
       row.querySelector('.sel').onclick  = (e)=>{ const ok = wrapSelectionWithTag(c.name); if(ok) flashTip(`Etiquetado: ${c.name}`, e); };
       row.querySelector('.par').onclick  = (e)=>{ const ok = wrapParagraphWithTag(c.name); if(ok) flashTip(`Párrafo → ${c.name}`, e); };
@@ -229,13 +149,8 @@
       els.quickCast.appendChild(row);
     });
   }
-  function previewCharacter(c){
-    const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice();
-    const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`);
-    if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u);
-  }
+  function previewCharacter(c){ const vv = state.voices.find(v=>v.voiceURI===c.voiceURI) || pickDefaultVoice(); const u = new SpeechSynthesisUtterance(`${c.name||'Personaje'}: esta es una prueba.`); if(vv) u.voice=vv; u.lang=vv?.lang; u.rate=c.rate||1; u.pitch=c.pitch||1; u.volume=c.volume||1; speechSynthesis.speak(u); }
 
-  // ===== CHIPS + DnD =====
   function buildTagOptions(){ const names=state.cast.map(c=>c.name).filter(Boolean); if(!els.applyTagSelect) return; els.applyTagSelect.innerHTML=''; names.forEach(nm=>{ const o=document.createElement('option'); o.value=nm; o.textContent=nm; els.applyTagSelect.appendChild(o); }); }
   function renderTagBar(){
     if(!els.tagBar) return;
@@ -251,6 +166,7 @@
     });
     buildTagOptions();
   }
+
   function wrapSelectionWithTag(name){
     const el=els.text; if(!el) return false;
     if(!name){ toast('Pon nombre al personaje.'); return false; }
@@ -261,7 +177,7 @@
     const v=el.value;
     el.value = v.slice(0,start) + open + ' ' + v.slice(start,end) + ' ' + close + v.slice(end);
     el.setSelectionRange((v.slice(0,start)+open+' ').length,(v.slice(0,start)+open+' ').length);
-    save(); updateCounts(); if(state.view==='color') renderVisual();
+    save(); updateCounts();
     return true;
   }
   function getParagraphBounds(value,start,end){
@@ -284,7 +200,7 @@
     const open=`[[${name}]] `, close=` [[/${name}]]`;
     el.value = el.value.slice(0,s) + open + inside + close + el.value.slice(e);
     el.setSelectionRange((el.value.slice(0,s)+open).length,(el.value.slice(0,s)+open).length);
-    save(); updateCounts(); if(state.view==='color') renderVisual();
+    save(); updateCounts();
     return true;
   }
 
@@ -297,41 +213,7 @@
     el.addEventListener('drop', e=>{ const spk=e.dataTransfer?.getData('text/x-speaker'); if(!spk) return; e.preventDefault(); wrapSelectionWithTag(spk); });
   }
 
-  // ===== VISUAL (Colores) =====
-  const esc = (s)=> s.replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-  function colorFor(name, idx){ const c = state.cast.find(x => norm(x.name)===norm(name))?.color; return c || COLORS[idx % COLORS.length]; }
-  function renderVisual(){
-    if(!els.visual) return;
-    const raw=(els.text?.value||''); if(!raw.trim()){ els.visual.innerHTML=''; return; }
-    const t = convertVozBlocks(raw);
-    const out=[]; const re=/\[\[([^\]]+)\]\]([\s\S]*?)\[\[\/\1\]\]/g; let last=0, m, idx=0;
-    while((m=re.exec(t))){ if(m.index>last){ const outside=t.slice(last,m.index); if(outside) out.push({speaker:null, text:outside}); } out.push({speaker:(m[1]||'').trim(), text:(m[2]||'')}); last=re.lastIndex; }
-    if(last<t.length) out.push({speaker:null, text:t.slice(last)});
-    const parts=[];
-    for(const seg of out.length?out:[{speaker:null,text:t}]){
-      if(seg.speaker){ parts.push(seg); continue; }
-      const lines=seg.text.split(/(\n+)/);
-      for(const line of lines){
-        if(!line) continue; if(line.match(/^\n+$/)){ parts.push({speaker:null, text:line}); continue; }
-        const mm=line.match(/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:\s*(.+)$/);
-        if(mm) parts.push({speaker:mm[1].trim(), text:mm[2]}); else parts.push({speaker:null, text:line});
-      }
-    }
-    let html=''; let ci=0;
-    for(const p of parts){
-      if(p.speaker){ const col=colorFor(p.speaker, ci++); html += `<span class="seg" style="background:${col}20;border:1px solid ${col}55">${esc(p.text)}</span>`; }
-      else html += esc(p.text);
-    }
-    els.visual.innerHTML=html;
-  }
-  function setView(mode){
-    state.view=mode;
-    if(mode==='color'){ els.text.hidden=true; els.visual.hidden=false; renderVisual(); els.toggleView.textContent='🏷️ Etiquetas'; }
-    else { els.visual.hidden=true; els.text.hidden=false; els.toggleView.textContent='🎨 Colores'; }
-    save();
-  }
-
-  // ===== EXPORT AUDIO =====
+  // Export de audio (MediaRecorder + lamejs opcional)
   const rec = { recording:false, mr:null, stream:null, chunks:[] };
   function guessMime(){ const prefs=['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/ogg']; for(const m of prefs){ if(MediaRecorder.isTypeSupported(m)) return m; } return ''; }
   async function startExport(){
@@ -412,7 +294,6 @@
   }
   function writeStr(view, offset, str){ for(let i=0;i<str.length;i++) view.setUint8(offset+i, str.charCodeAt(i)); }
 
-  // ===== PARSER + LECTOR =====
   const convertVozBlocks = str => str.replace(/\[voz=([^\]]+)\]([\s\S]*?)\[\/voz\]/gi,(_,n,inn)=>`[[${(n||'').trim()}]]${inn}[[/${(n||'').trim()}]]`);
   function chunkText(t,maxLen=180){
     const sentences=t.split(/(?<=[\.!?¿¡…\n])\s+/).map(s=>s.trim()).filter(Boolean);
@@ -483,17 +364,13 @@
   function stop(){ state.canceling=true; try{ speechSynthesis.cancel(); }catch{} finish(); }
   function finish(){ state.speaking=false; state.paused=false; state.idx=0; state.queue=[]; if(els.now) els.now.textContent='Listo.'; if(els.progress) els.progress.value=0; }
 
-  // ===== AUTODETECT =====
   function autodetectNames(t){
     const names=new Set();
-    const re1=/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:/gm;
-    let m; while((m=re1.exec(t))) names.add((m[1]||'').trim());
-    const re2=/\[\[(?!\/)([^\]]+)\]\]/g;
-    while((m=re2.exec(t))){ const nm=(m[1]||'').trim(); if(nm) names.add(nm.replace(/^\//,'')); }
+    const re1=/^\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9'\.\- ]{1,40})\s*:/gm; let m; while((m=re1.exec(t))) names.add((m[1]||'').trim());
+    const re2=/\[\[(?!\/)([^\]]+)\]\]/g; while((m=re2.exec(t))){ const nm=(m[1]||'').trim(); if(nm) names.add(nm.replace(/^\//,'')); }
     return Array.from(names).filter(n=>n && n.length<=30);
   }
 
-  // ===== MINI TOOLTIP =====
   function ensureTipCSS(){
     if(document.getElementById('rb-tip-style')) return;
     const s=document.createElement('style'); s.id='rb-tip-style';
@@ -512,7 +389,6 @@
     setTimeout(()=>{ tip.style.opacity='0'; tip.style.transform='translateY(-4px)'; setTimeout(()=> tip.remove(), 180); }, 900);
   }
 
-  // ===== INIT / HOOKS =====
   function updateCounts(){
     const words=(els.text?.value.trim().match(/\S+/g)||[]).length;
     if(els.wordCount) els.wordCount.textContent = `${words.toLocaleString()} palabra${words===1?'':'s'}`;
@@ -521,12 +397,12 @@
     if(els.estimates) els.estimates.textContent = words? `≈ ${formatTime(mins)} • ${words.toLocaleString()} palabras` : '–';
   }
   function formatTime(mins){ if(!isFinite(mins)) return '–'; const total=Math.max(0,Math.round(mins*60)); const h=Math.floor(total/3600), m=Math.floor((total%3600)/60), s=total%60; return h>0?`${h}h ${m}m`:(m>0?`${m}m ${s}s`:`${s}s`); }
-  function toast(msg){ if(els.live){ els.live.textContent = msg; setTimeout(()=>{ if(els.live.textContent===msg) els.live.textContent=''; }, 2500); } }
+  function toast(msg){ if(els.live){ els.live.textContent = msg; setTimeout(()=>{ if(els.live.textContent===msg) els.live.textContent=''; }, 2000); } }
 
-  function readFile(file){ if(!file) return; const reader=new FileReader(); reader.onload=()=>{ if(els.text){ els.text.value=String(reader.result||''); save(); updateCounts(); if(state.view==='color') renderVisual(); } }; reader.readAsText(file); }
+  function readFile(file){ if(!file) return; const reader=new FileReader(); reader.onload=()=>{ if(els.text){ els.text.value=String(reader.result||''); save(); updateCounts(); } }; reader.readAsText(file); }
 
   function bindBasics(){
-    if(els.text) els.text.addEventListener('input', ()=>{ save(); updateCounts(); if(state.view==='color') renderVisual(); });
+    if(els.text) els.text.addEventListener('input', ()=>{ save(); updateCounts(); });
     if(els.file) els.file.addEventListener('change', e=>{ const f=e.target.files?.[0]; readFile(f); e.target.value=''; });
     if(els.drop){
       ['dragenter','dragover'].forEach(ev=> els.drop.addEventListener(ev, e=>{ e.preventDefault(); e.stopPropagation(); els.drop.classList.add('dragover'); }));
@@ -542,24 +418,13 @@
     if(els.applyTagBtn) els.applyTagBtn.addEventListener('click', (e)=>{ const nm=els.applyTagSelect?.value; const ok=wrapSelectionWithTag(nm); if(ok) flashTip(`Etiquetado: ${nm}`, e); });
     bindEditorDnD();
 
-    // lector
     if(els.play) els.play.addEventListener('click', start);
     if(els.pause) els.pause.addEventListener('click', pause);
     if(els.resume) els.resume.addEventListener('click', resume);
     if(els.stop) els.stop.addEventListener('click', stop);
 
-    // Atajos: Espacio / S / R (existentes) + ALT+1..9 para etiquetar (sel o párrafo)
     document.addEventListener('keydown', e=>{
-      if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')){
-        // permitimos ALT+1..9 aunque estés en textarea si hay Alt
-        if(!(e.altKey && /^Digit[1-9]$/.test(e.code))) return;
-      }
-      if(e.code==='Space' && !e.altKey){ e.preventDefault(); if(speechSynthesis.speaking && !speechSynthesis.paused) pause(); else resume(); return; }
-      if(!e.altKey){
-        if(e.key==='s'||e.key==='S'){ stop(); return; }
-        if(e.key==='r'||e.key==='R'){ resume(); return; }
-      }
-      // ALT+1..9
+      // Alt+1..9 => sel o párrafo (incluso en textarea)
       if(e.altKey && /^Digit[1-9]$/.test(e.code)){
         const idx = parseInt(e.code.replace('Digit',''),10) - 1;
         const named = state.cast.filter(c=>!!c.name);
@@ -567,27 +432,27 @@
         if(!c) return;
         const selOk = wrapSelectionWithTag(c.name);
         if(!selOk) wrapParagraphWithTag(c.name);
-        flashTip(`Atajo Alt+${idx+1} → ${c.name}`, e);
+        flashTip(`Alt+${idx+1} → ${c.name}`, e);
+        e.preventDefault();
+        return;
       }
+      if(e.target && (e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')) return;
+      if(e.code==='Space'){ e.preventDefault(); if(speechSynthesis.speaking && !speechSynthesis.paused) pause(); else resume(); }
+      if(e.key==='s'||e.key==='S'){ stop(); }
+      if(e.key==='r'||e.key==='R'){ resume(); }
     });
 
-    // narrador sliders -> numeritos
     const upd=()=>{ if(els.rateVal) els.rateVal.textContent=(+els.rate.value).toFixed(1); if(els.pitchVal) els.pitchVal.textContent=(+els.pitch.value).toFixed(1); if(els.volumeVal) els.volumeVal.textContent=(+els.volume.value).toFixed(2); updateCounts(); };
     ['input','change'].forEach(ev=>{ els.rate?.addEventListener(ev,upd); els.pitch?.addEventListener(ev,upd); els.volume?.addEventListener(ev,upd); });
     els.preview?.addEventListener('click', ()=>{ const s=narratorSettings(); const u=new SpeechSynthesisUtterance('Prueba de narrador.'); if(s.voice) u.voice=s.voice; u.lang=s.voice?.lang||'es-ES'; u.rate=s.rate; u.pitch=s.pitch; u.volume=s.volume; speechSynthesis.speak(u); });
 
-    // export audio + toggle view + export .txt
     els.rec?.addEventListener('click', ()=>{ (rec.recording? stopExport() : startExport()); });
-    els.toggleView?.addEventListener('click', ()=> setView(state.view==='text' ? 'color' : 'text'));
+
     els.exportBtn?.addEventListener('click', ()=>{ const blob=new Blob([els.text?.value||''],{type:'text/plain;charset=utf-8'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='texto_para_leer.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); });
 
-    // self check
     els.selfCheck?.addEventListener('click', ()=>{
       const issues=[];
-      if(!els.rec) issues.push('Falta #btnRec');
-      if(!els.toggleView) issues.push('Falta #btnToggleView');
       if(!els.quickCast) issues.push('Falta #quickCastList');
-      if(!els.visual) issues.push('Falta #editorVisual');
       els.domStatus && (els.domStatus.textContent = issues.length? `Autotest: ${issues.length}` : 'Autotest: OK ✅');
       toast(issues.length? `Autotest: ${issues.join(' • ')}` : 'Autotest: OK ✅');
     });
@@ -604,7 +469,6 @@
     bindBasics();
     ensureNarrator(); ensureColors();
     renderCast(); renderTagBar(); renderQuickCast();
-    if(state.view==='color') setView('color'); else setView('text');
     updateCounts();
   });
 })();
