@@ -317,7 +317,7 @@
     return issues;
   }
 
-  // tagging helpers
+  // ----- tagging helpers + DnD (these were missing) -----
   function buildTagOptions(){ const names = ['Narrador', ...state.cast.map(c=>c.name).filter(Boolean)]; const sel = $('#applyTagSelect'); if(!sel) return; sel.innerHTML=''; names.forEach(nm=>{ const o=document.createElement('option'); o.value=nm; o.textContent=nm; sel.appendChild(o); }); }
   function renderTagBar(){
     const bar = $('#tagBar'); if(!bar) return; bar.innerHTML='';
@@ -336,6 +336,19 @@
   function getParagraphBounds(value, start, end){ const len = value.length; let s = Math.max(0, start|0); let e = Math.max(s, end|0); const left = value.lastIndexOf('\n\n', s); const bStart0 = left >= 0 ? left + 2 : 0; const right = value.indexOf('\n\n', e); const bEnd0 = right >= 0 ? right : len; let bStart = bStart0, bEnd = bEnd0; while (bStart < bEnd && /\s/.test(value[bStart])) bStart++; while (bEnd > bStart && /\s/.test(value[bEnd-1])) bEnd--; return { start: bStart, end: bEnd }; }
   function wrapParagraphWithTag(name){ const el = els.text; if(!el) return; el.focus(); const start = el.selectionStart ?? 0; const end   = el.selectionEnd ?? start; const {start:s, end:e} = getParagraphBounds(el.value, start, end); const inner = el.value.slice(s, e); if(!inner.trim()){ els.live && (els.live.textContent = 'Párrafo vacío o solo espacios.'); return; } if(inner.includes('[[') && inner.includes(']]')){ els.live && (els.live.textContent = 'Ese párrafo ya tiene etiquetas. Usa "Asignar sel." o limpia antes.'); return; } const before = el.value.slice(0, s); const after  = el.value.slice(e); const open = `[[${name}]] `, close = ` [[/${name}]]`; el.value = before + open + inner + close + after; const caret = (before + open).length; el.setSelectionRange(caret, caret); save(); updateCounts(); }
 
+  function updateApplyEnabled(){ const el = els.text; if(!el) return; const hasSel = (el.selectionEnd - el.selectionStart) > 0; const bSel = $('#applyTagBtn'); if(bSel) bSel.disabled = !hasSel; document.querySelectorAll('button[data-assign="1"]').forEach(b=>{ b.disabled = !hasSel; }); }
+  function bindEditorDnD(){
+    const el = els.text; if(!el) return;
+    ['dragenter','dragover'].forEach(ev=> el.addEventListener(ev, e=>{
+      const spk = e.dataTransfer?.types?.includes('text/x-speaker'); if(spk){ e.preventDefault(); el.classList.add('drop-active'); }
+    }));
+    ['dragleave','drop','dragend'].forEach(ev=> el.addEventListener(ev, e=>{ el.classList.remove('drop-active'); }));
+    el.addEventListener('drop', e=>{ const spk = e.dataTransfer?.getData('text/x-speaker'); if(!spk) return; e.preventDefault(); wrapSelectionWithTag(spk); });
+    el.addEventListener('mouseup', updateApplyEnabled);
+    el.addEventListener('keyup', updateApplyEnabled);
+    el.addEventListener('select', updateApplyEnabled);
+  }
+
   // ---- Resizer ----
   function installResizer(){
     const grid = document.querySelector('main .grid');
@@ -348,14 +361,12 @@
       res.setAttribute('role', 'separator');
       res.setAttribute('aria-orientation', 'vertical');
       res.tabIndex = 0;
-      // INSERTAR ANTES DEL PANEL DERECHO (2º hijo), para que quede [izq, resizer, der]
       if(grid.children.length >= 2){
-        grid.insertBefore(res, grid.children[1]);
+        grid.insertBefore(res, grid.children[1]); // [left, resizer, right]
       } else {
-        grid.appendChild(res); // fallback
+        grid.appendChild(res);
       }
     } else {
-      // Auto-curar: si el resizer no es el 2º hijo, moverlo
       if(grid.children[1] !== res){
         grid.insertBefore(res, grid.children[1]);
       }
