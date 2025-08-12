@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Readbook</title>
   <meta name="description" content="Readbook: lector TTS en el navegador con voces por personaje." />
-  <link rel="stylesheet" href="app.css?v=1.4.3" />
+  <link rel="stylesheet" href="app.css?v=1.4.4" />
 </head>
 <body>
   <header>
     <div class="brand">
       <div class="logo" aria-hidden="true">
-        <!-- Logo autosuficiente: fondo y borde dentro del SVG -->
         <svg class="rb-logo" viewBox="0 0 36 36" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
           <rect x="0.5" y="0.5" width="35" height="35" rx="10" fill="#0f172a" stroke="#1f2a44"/>
           <circle cx="18" cy="18" r="14" fill="rgba(255,255,255,0.08)"/>
@@ -32,7 +31,6 @@
 
   <main>
     <div class="grid">
-      <!-- Izquierda -->
       <section class="card controls">
         <div class="head">
           <h2>Tu texto</h2>
@@ -92,7 +90,6 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
         </div>
       </section>
 
-      <!-- Derecha: QuickCast -->
       <section class="card" id="rightPanel">
         <div class="head small">
           <h2 style="font-size:14px;margin:0">Asignación rápida</h2>
@@ -163,6 +160,6 @@ El resto se lee con la voz por defecto (Narrador)."></textarea>
     <div id="live" aria-live="polite" class="hint" style="margin-top:6px"></div>
   </footer>
 
-  <script src="app.js?v=1.4.3" defer></script>
+  <script src="app.js?v=1.4.4" defer></script>
 </body>
 </html>
