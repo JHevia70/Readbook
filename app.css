@@ -1,5 +1,144 @@
+:root{
+  --bg: #0b0e14;
+  --panel: #121826;
+  --muted: #8b95a7;
+  --text: #e6eefc;
+  --accent: #7c5cff;
+  --accent-2: #23c9a9;
+  --danger: #ff6b6b;
+  --warning: #ffce57;
+  --ok: #22c55e;
+  --shadow: 0 10px 30px rgba(0,0,0,.35);
+  --radius: 14px;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background: radial-gradient(1200px 600px at 20% -10%, #1a2338 0%, rgba(26,35,56,0) 60%),
+                           radial-gradient(1000px 500px at 120% 10%, #1f153e 0%, rgba(31,21,62,0) 60%),
+                           var(--bg);
+  color:var(--text); font: 16px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, Noto Sans, "Apple Color Emoji","Segoe UI Emoji";
+}
+header{max-width:1200px; margin:32px auto 16px; padding:0 20px; display:flex; align-items:center; justify-content:space-between; gap:16px}
+.brand{display:flex; align-items:center; gap:12px}
+.logo{width:40px; height:40px; display:grid; place-items:center; border-radius:12px; background: conic-gradient(from 210deg at 50% 50%, var(--accent), var(--accent-2)); box-shadow: var(--shadow)}
+.brand h1{font-size: clamp(18px, 3vw, 24px); margin:0}
+.tag{color:var(--muted); font-size:14px}
+main{max-width:1200px; margin:0 auto 60px; padding:0 20px}
 
-/* Reutiliza tu CSS actual y añadimos estilos compactos para quick-cast */
+/* Two-column grid (editor + right panel). The JS resizer may override columns inline. */
+.grid{display:grid; grid-template-columns: minmax(560px, 1.8fr) minmax(280px, 0.6fr); gap:18px; align-items:start}
+@media (max-width:1100px){ .grid{ grid-template-columns: 1fr } }
+
+/* Cards */
+.card{background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02)); border:1px solid rgba(255,255,255,.07); border-radius: var(--radius); box-shadow: var(--shadow)}
+.card .head{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 0}
+.card h2{font-size: 16px; margin:0 0 8px}
+.body{padding:16px}
+
+/* Editor + inputs */
+textarea{width:100%; min-height: 360px; resize:vertical; border-radius:12px; background:#0f1422; color:var(--text); border:1px solid rgba(255,255,255,.08); padding:14px; outline:none; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03); caret-color: var(--accent)}
+.drop{border:1.5px dashed rgba(255,255,255,.12); border-radius:12px; padding:12px; text-align:center; color:var(--muted)}
+.drop.dragover{border-color: var(--accent); color:var(--text)}
+
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+.stack{display:grid; gap:12px}
+
+.toolbar{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; margin-top:10px}
+.toolbar .group{display:flex; flex-wrap:wrap; gap:10px}
+
+/* Controls */
+button, select, input[type="file"]::file-selector-button{
+  appearance:none; background:#11182a; color:var(--text); border:1px solid rgba(255,255,255,.08);
+  border-radius: 12px; padding:10px 14px; cursor:pointer; transition: transform .02s ease, background .2s ease, border-color .2s ease;
+}
+button:hover{background:#142038}
+button:active{transform: translateY(1px)}
+.primary{background: linear-gradient(90deg, var(--accent), var(--accent-2)); border:none}
+.danger{background: #25111a; border-color: rgba(255,0,0,.25)}
+.ghost{background: transparent; border-color: rgba(255,255,255,.12)}
+
+.sliders{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px}
+@media (max-width:640px){.sliders{grid-template-columns: 1fr}}
+.slider{background:#0f1422; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px}
+.slider label{display:flex; justify-content:space-between; font-size:14px; color:var(--muted)}
+.slider input[type=range]{width:100%}
+
+/* Status + progress */
+.status{display:flex; align-items:center; justify-content:space-between; gap:10px; color:var(--muted); font-size:14px}
+progress{width:100%; height:10px; border: none; background:#0e1220; border-radius:999px; overflow:hidden}
+progress::-webkit-progress-bar{background:#0e1220}
+progress::-webkit-progress-value{background: linear-gradient(90deg, var(--accent), var(--accent-2))}
+progress::-moz-progress-bar{background: linear-gradient(90deg, var(--accent), var(--accent-2))}
+
+.pill{font-size:12px; padding:4px 8px; border-radius:999px; background:#0f1422; border:1px solid rgba(255,255,255,.08); color:var(--muted)}
+.hint{font-size:12px; color:var(--muted)}
+.kbd{background:#0f1422; border:1px solid rgba(255,255,255,.08); padding:2px 6px; border-radius:6px}
+
+/* Cast / personajes */
+.cast-list{display:grid; gap:12px}
+.cast-item{display:grid; grid-template-columns: 1.2fr 1fr; gap:12px; align-items:center; background:#0f1422; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:12px}
+@media (max-width:900px){.cast-item{grid-template-columns: 1fr}}
+.cast-name{display:flex; align-items:center; gap:8px}
+.dot{width:10px; height:10px; border-radius:999px; display:inline-block}
+.mini{display:grid; grid-template-columns: repeat(3, 1fr); gap:8px}
+.mini label{font-size:11px; color:var(--muted); display:flex; justify-content:space-between}
+.mini input[type=range]{width:100%}
+.cast-actions{display:flex; gap:8px; justify-content:flex-end}
+
+/* Quick tag chips */
+.chips{display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.chip{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; border:1px solid rgba(255,255,255,.12); background:#0f1422; user-select:none; cursor:grab}
+.chip:active{cursor:grabbing}
+.chip .dot{width:8px; height:8px; border-radius:999px; display:inline-block}
+textarea.drop-active{outline:2px dashed var(--accent); outline-offset:2px}
+.quick-tags .hint{margin-top:4px}
+
+/* --- Column resizer (injected) --- */
+.col-resizer{
+  width:10px;
+  cursor: col-resize;
+  user-select:none;
+  height:100%;
+  position:relative;
+  border-radius:8px;
+  background: transparent;
+}
+.col-resizer::before{
+  content:"";
+  position:absolute;
+  top:8px; bottom:8px;
+  left:50%;
+  width:2px;
+  transform: translateX(-1px);
+  border-radius:2px;
+  background: rgba(255,255,255,.22);
+}
+:root[data-theme="light"] .col-resizer::before{ background: rgba(0,0,0,.28); }
+.col-resizer:hover::before{ background: rgba(124,92,255,.66); }
+@media (max-width:1100px){ .col-resizer{ display:none } }
+
+/* Light-mode auto if prefer-color-scheme says so (kept simple) */
+@media (prefers-color-scheme: light){
+  :root{
+    --bg: #f7f9fc;
+    --panel: #ffffff;
+    --muted: #52607a;
+    --text: #0b1220;
+    --accent: #7c5cff;
+    --accent-2: #23c9a9;
+    --danger: #e11d48;
+    --warning: #b7791f;
+    --ok: #16a34a;
+    --shadow: 0 10px 30px rgba(0,0,0,.08);
+  }
+  body{ background: #f7f9fc; color: var(--text); }
+  textarea, .drop, .slider, .chip, .pill, .kbd, .cast-item{ background:#ffffff; border-color: rgba(0,0,0,.08); color: #0b1220; }
+  .ghost{ background: transparent; border-color: rgba(0,0,0,.12); }
+  progress::-webkit-progress-bar{ background: #e5e7eb; }
+}
+
+/* ---------- Quick-cast list in right panel ---------- */
 .quick-cast{ display:grid; gap:8px; max-height: 280px; overflow:auto; padding-right:4px }
 .quick-cast .qc-row{ display:flex; align-items:center; gap:8px; justify-content:space-between; border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:8px; background:#0f1422 }
 :root[data-theme="light"] .quick-cast .qc-row{ background:#ffffff; border-color: rgba(0,0,0,.08) }
